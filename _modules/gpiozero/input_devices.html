@@ -1,0 +1,1101 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>gpiozero.input_devices &#8212; LEDScoreboard alpha documentation</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for gpiozero.input_devices</h1><div class="highlight"><pre>
+<span></span><span class="c1"># vim: set fileencoding=utf-8:</span>
+<span class="c1">#</span>
+<span class="c1"># GPIO Zero: a library for controlling the Raspberry Pi&#39;s GPIO pins</span>
+<span class="c1"># Copyright (c) 2016-2019 Andrew Scheller &lt;github@loowis.durge.org&gt;</span>
+<span class="c1"># Copyright (c) 2015-2019 Dave Jones &lt;dave@waveform.org.uk&gt;</span>
+<span class="c1"># Copyright (c) 2015-2019 Ben Nuttall &lt;ben@bennuttall.com&gt;</span>
+<span class="c1"># Copyright (c) 2018 Philippe Muller &lt;philippe.muller@gmail.com&gt;</span>
+<span class="c1"># Copyright (c) 2016 Steveis &lt;SteveAmor@users.noreply.github.com&gt;</span>
+<span class="c1">#</span>
+<span class="c1"># Redistribution and use in source and binary forms, with or without</span>
+<span class="c1"># modification, are permitted provided that the following conditions are met:</span>
+<span class="c1">#</span>
+<span class="c1"># * Redistributions of source code must retain the above copyright notice,</span>
+<span class="c1">#   this list of conditions and the following disclaimer.</span>
+<span class="c1">#</span>
+<span class="c1"># * Redistributions in binary form must reproduce the above copyright notice,</span>
+<span class="c1">#   this list of conditions and the following disclaimer in the documentation</span>
+<span class="c1">#   and/or other materials provided with the distribution.</span>
+<span class="c1">#</span>
+<span class="c1"># * Neither the name of the copyright holder nor the names of its contributors</span>
+<span class="c1">#   may be used to endorse or promote products derived from this software</span>
+<span class="c1">#   without specific prior written permission.</span>
+<span class="c1">#</span>
+<span class="c1"># THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot;</span>
+<span class="c1"># AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE</span>
+<span class="c1"># IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE</span>
+<span class="c1"># ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE</span>
+<span class="c1"># LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR</span>
+<span class="c1"># CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF</span>
+<span class="c1"># SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS</span>
+<span class="c1"># INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN</span>
+<span class="c1"># CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)</span>
+<span class="c1"># ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE</span>
+<span class="c1"># POSSIBILITY OF SUCH DAMAGE.</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="p">(</span>
+    <span class="n">unicode_literals</span><span class="p">,</span>
+    <span class="n">print_function</span><span class="p">,</span>
+    <span class="n">absolute_import</span><span class="p">,</span>
+    <span class="n">division</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">from</span> <span class="nn">time</span> <span class="k">import</span> <span class="n">sleep</span><span class="p">,</span> <span class="n">time</span>
+<span class="kn">from</span> <span class="nn">threading</span> <span class="k">import</span> <span class="n">Event</span><span class="p">,</span> <span class="n">Lock</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">statistics</span> <span class="k">import</span> <span class="n">median</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">.compat</span> <span class="k">import</span> <span class="n">median</span>
+
+<span class="kn">from</span> <span class="nn">.exc</span> <span class="k">import</span> <span class="n">InputDeviceError</span><span class="p">,</span> <span class="n">DeviceClosed</span><span class="p">,</span> <span class="n">DistanceSensorNoEcho</span><span class="p">,</span> \
+    <span class="n">PinInvalidState</span>
+<span class="kn">from</span> <span class="nn">.devices</span> <span class="k">import</span> <span class="n">GPIODevice</span>
+<span class="kn">from</span> <span class="nn">.mixins</span> <span class="k">import</span> <span class="n">GPIOQueue</span><span class="p">,</span> <span class="n">EventsMixin</span><span class="p">,</span> <span class="n">HoldMixin</span>
+
+
+<span class="k">class</span> <span class="nc">InputDevice</span><span class="p">(</span><span class="n">GPIODevice</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Represents a generic GPIO input device.</span>
+
+<span class="sd">    This class extends :class:`GPIODevice` to add facilities common to GPIO</span>
+<span class="sd">    input devices.  The constructor adds the optional *pull_up* parameter to</span>
+<span class="sd">    specify how the pin should be pulled by the internal resistors. The</span>
+<span class="sd">    :attr:`is_active` property is adjusted accordingly so that :data:`True`</span>
+<span class="sd">    still means active regardless of the *pull_up* setting.</span>
+
+<span class="sd">    :type pin: int or str</span>
+<span class="sd">    :param pin:</span>
+<span class="sd">        The GPIO pin that the device is connected to. See :ref:`pin-numbering`</span>
+<span class="sd">        for valid pin numbers. If this is :data:`None` a :exc:`GPIODeviceError`</span>
+<span class="sd">        will be raised.</span>
+
+<span class="sd">    :type pull_up: bool or None</span>
+<span class="sd">    :param pull_up:</span>
+<span class="sd">        If :data:`True`, the pin will be pulled high with an internal resistor.</span>
+<span class="sd">        If :data:`False` (the default), the pin will be pulled low.  If</span>
+<span class="sd">        :data:`None`, the pin will be floating. As gpiozero cannot</span>
+<span class="sd">        automatically guess the active state when not pulling the pin, the</span>
+<span class="sd">        *active_state* parameter must be passed.</span>
+
+<span class="sd">    :type active_state: bool or None</span>
+<span class="sd">    :param active_state:</span>
+<span class="sd">        If :data:`True`, when the hardware pin state is ``HIGH``, the software</span>
+<span class="sd">        pin is ``HIGH``. If :data:`False`, the input polarity is reversed: when</span>
+<span class="sd">        the hardware pin state is ``HIGH``, the software pin state is ``LOW``.</span>
+<span class="sd">        Use this parameter to set the active state of the underlying pin when</span>
+<span class="sd">        configuring it as not pulled (when *pull_up* is :data:`None`). When</span>
+<span class="sd">        *pull_up* is :data:`True` or :data:`False`, the active state is</span>
+<span class="sd">        automatically set to the proper value.</span>
+
+<span class="sd">    :type pin_factory: Factory or None</span>
+<span class="sd">    :param pin_factory:</span>
+<span class="sd">        See :doc:`api_pins` for more information (this is an advanced feature</span>
+<span class="sd">        which most users can ignore).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pin</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">pull_up</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">active_state</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">pin_factory</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">InputDevice</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">pin</span><span class="p">,</span> <span class="n">pin_factory</span><span class="o">=</span><span class="n">pin_factory</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pin</span><span class="o">.</span><span class="n">function</span> <span class="o">=</span> <span class="s1">&#39;input&#39;</span>
+            <span class="n">pull</span> <span class="o">=</span> <span class="p">{</span><span class="kc">None</span><span class="p">:</span> <span class="s1">&#39;floating&#39;</span><span class="p">,</span> <span class="kc">True</span><span class="p">:</span> <span class="s1">&#39;up&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">:</span> <span class="s1">&#39;down&#39;</span><span class="p">}[</span><span class="n">pull_up</span><span class="p">]</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pin</span><span class="o">.</span><span class="n">pull</span> <span class="o">!=</span> <span class="n">pull</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">pin</span><span class="o">.</span><span class="n">pull</span> <span class="o">=</span> <span class="n">pull</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="k">raise</span>
+
+        <span class="k">if</span> <span class="n">pull_up</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">active_state</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">PinInvalidState</span><span class="p">(</span>
+                    <span class="s1">&#39;Pin </span><span class="si">%d</span><span class="s1"> is defined as floating, but &quot;active_state&quot; is not &#39;</span>
+                    <span class="s1">&#39;defined&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">pin</span><span class="o">.</span><span class="n">number</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_active_state</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">active_state</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">active_state</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">PinInvalidState</span><span class="p">(</span>
+                    <span class="s1">&#39;Pin </span><span class="si">%d</span><span class="s1"> is not floating, but &quot;active_state&quot; is not None&#39;</span> <span class="o">%</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">pin</span><span class="o">.</span><span class="n">number</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_active_state</span> <span class="o">=</span> <span class="kc">False</span> <span class="k">if</span> <span class="n">pull_up</span> <span class="k">else</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_inactive_state</span> <span class="o">=</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_active_state</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">pull_up</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        If :data:`True`, the device uses a pull-up resistor to set the GPIO pin</span>
+<span class="sd">        &quot;high&quot; by default.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">pull</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pin</span><span class="o">.</span><span class="n">pull</span>
+        <span class="k">if</span> <span class="n">pull</span> <span class="o">==</span> <span class="s1">&#39;floating&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">pull</span> <span class="o">==</span> <span class="s1">&#39;up&#39;</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;&lt;gpiozero.</span><span class="si">%s</span><span class="s2"> object on pin </span><span class="si">%r</span><span class="s2">, pull_up=</span><span class="si">%s</span><span class="s2">, is_active=</span><span class="si">%s</span><span class="s2">&gt;&quot;</span> <span class="o">%</span> <span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pin</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pull_up</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_active</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">InputDevice</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__repr__</span><span class="p">()</span>
+
+
+<span class="k">class</span> <span class="nc">DigitalInputDevice</span><span class="p">(</span><span class="n">EventsMixin</span><span class="p">,</span> <span class="n">InputDevice</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Represents a generic input device with typical on/off behaviour.</span>
+
+<span class="sd">    This class extends :class:`InputDevice` with machinery to fire the active</span>
+<span class="sd">    and inactive events for devices that operate in a typical digital manner:</span>
+<span class="sd">    straight forward on / off states with (reasonably) clean transitions</span>
+<span class="sd">    between the two.</span>
+
+<span class="sd">    :type pin: int or str</span>
+<span class="sd">    :param pin:</span>
+<span class="sd">        The GPIO pin that the device is connected to. See :ref:`pin-numbering`</span>
+<span class="sd">        for valid pin numbers. If this is :data:`None` a :exc:`GPIODeviceError`</span>
+<span class="sd">        will be raised.</span>
+
+<span class="sd">    :type pull_up: bool or None</span>
+<span class="sd">    :param pull_up:</span>
+<span class="sd">        See descrpition under :class:`InputDevice` for more information.</span>
+
+<span class="sd">    :type active_state: bool or None</span>
+<span class="sd">    :param active_state:</span>
+<span class="sd">        See description under :class:`InputDevice` for more information.</span>
+
+<span class="sd">    :type bounce_time: float or None</span>
+<span class="sd">    :param bounce_time:</span>
+<span class="sd">        Specifies the length of time (in seconds) that the component will</span>
+<span class="sd">        ignore changes in state after an initial change. This defaults to</span>
+<span class="sd">        :data:`None` which indicates that no bounce compensation will be</span>
+<span class="sd">        performed.</span>
+
+<span class="sd">    :type pin_factory: Factory or None</span>
+<span class="sd">    :param pin_factory:</span>
+<span class="sd">        See :doc:`api_pins` for more information (this is an advanced feature</span>
+<span class="sd">        which most users can ignore).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">pin</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">pull_up</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">active_state</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">bounce_time</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">pin_factory</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">DigitalInputDevice</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">pin</span><span class="p">,</span> <span class="n">pull_up</span><span class="o">=</span><span class="n">pull_up</span><span class="p">,</span> <span class="n">active_state</span><span class="o">=</span><span class="n">active_state</span><span class="p">,</span>
+            <span class="n">pin_factory</span><span class="o">=</span><span class="n">pin_factory</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pin</span><span class="o">.</span><span class="n">bounce</span> <span class="o">=</span> <span class="n">bounce_time</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pin</span><span class="o">.</span><span class="n">edges</span> <span class="o">=</span> <span class="s1">&#39;both&#39;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pin</span><span class="o">.</span><span class="n">when_changed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pin_changed</span>
+            <span class="c1"># Call _fire_events once to set initial state of events</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_fire_events</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pin_factory</span><span class="o">.</span><span class="n">ticks</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_active</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="k">raise</span>
+
+    <span class="k">def</span> <span class="nf">_pin_changed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ticks</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="c1"># XXX This is a bit of a hack; _fire_events takes *is_active* rather</span>
+        <span class="c1"># than *value*. Here we&#39;re assuming no-one&#39;s overridden the default</span>
+        <span class="c1"># implementation of *is_active*.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_fire_events</span><span class="p">(</span><span class="n">ticks</span><span class="p">,</span> <span class="nb">bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_state_to_value</span><span class="p">(</span><span class="n">state</span><span class="p">)))</span>
+
+
+<span class="k">class</span> <span class="nc">SmoothedInputDevice</span><span class="p">(</span><span class="n">EventsMixin</span><span class="p">,</span> <span class="n">InputDevice</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Represents a generic input device which takes its value from the average of</span>
+<span class="sd">    a queue of historical values.</span>
+
+<span class="sd">    This class extends :class:`InputDevice` with a queue which is filled by a</span>
+<span class="sd">    background thread which continually polls the state of the underlying</span>
+<span class="sd">    device. The average (a configurable function) of the values in the queue is</span>
+<span class="sd">    compared to a threshold which is used to determine the state of the</span>
+<span class="sd">    :attr:`is_active` property.</span>
+
+<span class="sd">    .. note::</span>
+
+<span class="sd">        The background queue is not automatically started upon construction.</span>
+<span class="sd">        This is to allow descendents to set up additional components before the</span>
+<span class="sd">        queue starts reading values. Effectively this is an abstract base</span>
+<span class="sd">        class.</span>
+
+<span class="sd">    This class is intended for use with devices which either exhibit analog</span>
+<span class="sd">    behaviour (such as the charging time of a capacitor with an LDR), or those</span>
+<span class="sd">    which exhibit &quot;twitchy&quot; behaviour (such as certain motion sensors).</span>
+
+<span class="sd">    :type pin: int or str</span>
+<span class="sd">    :param pin:</span>
+<span class="sd">        The GPIO pin that the device is connected to. See :ref:`pin-numbering`</span>
+<span class="sd">        for valid pin numbers. If this is :data:`None` a :exc:`GPIODeviceError`</span>
+<span class="sd">        will be raised.</span>
+
+<span class="sd">    :type pull_up: bool or None</span>
+<span class="sd">    :param pull_up:</span>
+<span class="sd">        See descrpition under :class:`InputDevice` for more information.</span>
+
+<span class="sd">    :type active_state: bool or None</span>
+<span class="sd">    :param active_state:</span>
+<span class="sd">        See description under :class:`InputDevice` for more information.</span>
+
+<span class="sd">    :param float threshold:</span>
+<span class="sd">        The value above which the device will be considered &quot;on&quot;.</span>
+
+<span class="sd">    :param int queue_len:</span>
+<span class="sd">        The length of the internal queue which is filled by the background</span>
+<span class="sd">        thread.</span>
+
+<span class="sd">    :param float sample_wait:</span>
+<span class="sd">        The length of time to wait between retrieving the state of the</span>
+<span class="sd">        underlying device. Defaults to 0.0 indicating that values are retrieved</span>
+<span class="sd">        as fast as possible.</span>
+
+<span class="sd">    :param bool partial:</span>
+<span class="sd">        If :data:`False` (the default), attempts to read the state of the</span>
+<span class="sd">        device (from the :attr:`is_active` property) will block until the queue</span>
+<span class="sd">        has filled.  If :data:`True`, a value will be returned immediately, but</span>
+<span class="sd">        be aware that this value is likely to fluctuate excessively.</span>
+
+<span class="sd">    :param average:</span>
+<span class="sd">        The function used to average the values in the internal queue. This</span>
+<span class="sd">        defaults to :func:`statistics.median` which is a good selection for</span>
+<span class="sd">        discarding outliers from jittery sensors. The function specified must</span>
+<span class="sd">        accept a sequence of numbers and return a single number.</span>
+
+<span class="sd">    :type ignore: frozenset or None</span>
+<span class="sd">    :param ignore:</span>
+<span class="sd">        The set of values which the queue should ignore, if returned from</span>
+<span class="sd">        querying the device&#39;s value.</span>
+
+<span class="sd">    :type pin_factory: Factory or None</span>
+<span class="sd">    :param pin_factory:</span>
+<span class="sd">        See :doc:`api_pins` for more information (this is an advanced feature</span>
+<span class="sd">        which most users can ignore).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">pin</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">pull_up</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">active_state</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+            <span class="n">queue_len</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">sample_wait</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">partial</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">average</span><span class="o">=</span><span class="n">median</span><span class="p">,</span>
+            <span class="n">ignore</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">pin_factory</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_queue</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">SmoothedInputDevice</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">pin</span><span class="p">,</span> <span class="n">pull_up</span><span class="o">=</span><span class="n">pull_up</span><span class="p">,</span> <span class="n">active_state</span><span class="o">=</span><span class="n">active_state</span><span class="p">,</span>
+            <span class="n">pin_factory</span><span class="o">=</span><span class="n">pin_factory</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_queue</span> <span class="o">=</span> <span class="n">GPIOQueue</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">queue_len</span><span class="p">,</span> <span class="n">sample_wait</span><span class="p">,</span> <span class="n">partial</span><span class="p">,</span>
+                                    <span class="n">average</span><span class="p">,</span> <span class="n">ignore</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">threshold</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">threshold</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="k">raise</span>
+
+    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_queue</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="c1"># If the queue isn&#39;t initialized (it&#39;s None), or _queue hasn&#39;t been</span>
+            <span class="c1"># set ignore the error because we&#39;re trying to close anyway</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_queue</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span>
+        <span class="k">except</span> <span class="ne">RuntimeError</span><span class="p">:</span>
+            <span class="c1"># Cannot join thread before it starts; we don&#39;t care about this</span>
+            <span class="c1"># because we&#39;re trying to close the thread anyway</span>
+            <span class="k">pass</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_queue</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">SmoothedInputDevice</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_check_open</span><span class="p">()</span>
+        <span class="k">except</span> <span class="n">DeviceClosed</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">SmoothedInputDevice</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__repr__</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">partial</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_queue</span><span class="o">.</span><span class="n">full</span><span class="o">.</span><span class="n">is_set</span><span class="p">():</span>
+                <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">SmoothedInputDevice</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__repr__</span><span class="p">()</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s2">&quot;&lt;gpiozero.</span><span class="si">%s</span><span class="s2"> object on pin </span><span class="si">%r</span><span class="s2">, pull_up=</span><span class="si">%s</span><span class="s2">&gt;&quot;</span> <span class="o">%</span> <span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pin</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pull_up</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">queue_len</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        The length of the internal queue of values which is averaged to</span>
+<span class="sd">        determine the overall state of the device. This defaults to 5.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_check_open</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_queue</span><span class="o">.</span><span class="n">queue</span><span class="o">.</span><span class="n">maxlen</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">partial</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        If :data:`False` (the default), attempts to read the</span>
+<span class="sd">        :attr:`~SmoothedInputDevice.value` or</span>
+<span class="sd">        :attr:`~SmoothedInputDevice.is_active` properties will block until the</span>
+<span class="sd">        queue has filled.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_check_open</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_queue</span><span class="o">.</span><span class="n">partial</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">value</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the average of the values in the internal queue. This is</span>
+<span class="sd">        compared to :attr:`~SmoothedInputDevice.threshold` to determine whether</span>
+<span class="sd">        :attr:`is_active` is :data:`True`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_check_open</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_queue</span><span class="o">.</span><span class="n">value</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">threshold</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        If :attr:`~SmoothedInputDevice.value` exceeds this amount, then</span>
+<span class="sd">        :attr:`is_active` will return :data:`True`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_threshold</span>
+
+    <span class="nd">@threshold</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">threshold</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="mf">0.0</span> <span class="o">&lt;</span> <span class="n">value</span> <span class="o">&lt;</span> <span class="mf">1.0</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">InputDeviceError</span><span class="p">(</span>
+                <span class="s1">&#39;threshold must be between zero and one exclusive&#39;</span>
+            <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_threshold</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">is_active</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns :data:`True` if the :attr:`~SmoothedInputDevice.value`</span>
+<span class="sd">        currently exceeds :attr:`~SmoothedInputDevice.threshold` and</span>
+<span class="sd">        :data:`False` otherwise.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">threshold</span>
+
+
+<span class="k">class</span> <span class="nc">Button</span><span class="p">(</span><span class="n">HoldMixin</span><span class="p">,</span> <span class="n">DigitalInputDevice</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Extends :class:`DigitalInputDevice` and represents a simple push button</span>
+<span class="sd">    or switch.</span>
+
+<span class="sd">    Connect one side of the button to a ground pin, and the other to any GPIO</span>
+<span class="sd">    pin. Alternatively, connect one side of the button to the 3V3 pin, and the</span>
+<span class="sd">    other to any GPIO pin, then set *pull_up* to :data:`False` in the</span>
+<span class="sd">    :class:`Button` constructor.</span>
+
+<span class="sd">    The following example will print a line of text when the button is pushed::</span>
+
+<span class="sd">        from gpiozero import Button</span>
+
+<span class="sd">        button = Button(4)</span>
+<span class="sd">        button.wait_for_press()</span>
+<span class="sd">        print(&quot;The button was pressed!&quot;)</span>
+
+<span class="sd">    :type pin: int or str</span>
+<span class="sd">    :param pin:</span>
+<span class="sd">        The GPIO pin which the button is connected to. See :ref:`pin-numbering`</span>
+<span class="sd">        for valid pin numbers. If this is :data:`None` a :exc:`GPIODeviceError`</span>
+<span class="sd">        will be raised.</span>
+
+<span class="sd">    :type pull_up: bool or None</span>
+<span class="sd">    :param pull_up:</span>
+<span class="sd">        If :data:`True` (the default), the GPIO pin will be pulled high by</span>
+<span class="sd">        default.  In this case, connect the other side of the button to ground.</span>
+<span class="sd">        If :data:`False`, the GPIO pin will be pulled low by default. In this</span>
+<span class="sd">        case, connect the other side of the button to 3V3. If :data:`None`, the</span>
+<span class="sd">        pin will be floating, so it must be externally pulled up or down and</span>
+<span class="sd">        the ``active_state`` parameter must be set accordingly.</span>
+
+<span class="sd">    :type active_state: bool or None</span>
+<span class="sd">    :param active_state:</span>
+<span class="sd">        See description under :class:`InputDevice` for more information.</span>
+
+<span class="sd">    :type bounce_time: float or None</span>
+<span class="sd">    :param bounce_time:</span>
+<span class="sd">        If :data:`None` (the default), no software bounce compensation will be</span>
+<span class="sd">        performed. Otherwise, this is the length of time (in seconds) that the</span>
+<span class="sd">        component will ignore changes in state after an initial change.</span>
+
+<span class="sd">    :param float hold_time:</span>
+<span class="sd">        The length of time (in seconds) to wait after the button is pushed,</span>
+<span class="sd">        until executing the :attr:`when_held` handler. Defaults to ``1``.</span>
+
+<span class="sd">    :param bool hold_repeat:</span>
+<span class="sd">        If :data:`True`, the :attr:`when_held` handler will be repeatedly</span>
+<span class="sd">        executed as long as the device remains active, every *hold_time*</span>
+<span class="sd">        seconds. If :data:`False` (the default) the :attr:`when_held` handler</span>
+<span class="sd">        will be only be executed once per hold.</span>
+
+<span class="sd">    :type pin_factory: Factory or None</span>
+<span class="sd">    :param pin_factory:</span>
+<span class="sd">        See :doc:`api_pins` for more information (this is an advanced feature</span>
+<span class="sd">        which most users can ignore).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">pin</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">pull_up</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">active_state</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">bounce_time</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">hold_time</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">hold_repeat</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">pin_factory</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Button</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">pin</span><span class="p">,</span> <span class="n">pull_up</span><span class="o">=</span><span class="n">pull_up</span><span class="p">,</span> <span class="n">active_state</span><span class="o">=</span><span class="n">active_state</span><span class="p">,</span>
+            <span class="n">bounce_time</span><span class="o">=</span><span class="n">bounce_time</span><span class="p">,</span> <span class="n">pin_factory</span><span class="o">=</span><span class="n">pin_factory</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hold_time</span> <span class="o">=</span> <span class="n">hold_time</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hold_repeat</span> <span class="o">=</span> <span class="n">hold_repeat</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">value</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns 1 if the button is currently pressed, and 0 if it is not.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">Button</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
+
+<span class="n">Button</span><span class="o">.</span><span class="n">is_pressed</span> <span class="o">=</span> <span class="n">Button</span><span class="o">.</span><span class="n">is_active</span>
+<span class="n">Button</span><span class="o">.</span><span class="n">pressed_time</span> <span class="o">=</span> <span class="n">Button</span><span class="o">.</span><span class="n">active_time</span>
+<span class="n">Button</span><span class="o">.</span><span class="n">when_pressed</span> <span class="o">=</span> <span class="n">Button</span><span class="o">.</span><span class="n">when_activated</span>
+<span class="n">Button</span><span class="o">.</span><span class="n">when_released</span> <span class="o">=</span> <span class="n">Button</span><span class="o">.</span><span class="n">when_deactivated</span>
+<span class="n">Button</span><span class="o">.</span><span class="n">wait_for_press</span> <span class="o">=</span> <span class="n">Button</span><span class="o">.</span><span class="n">wait_for_active</span>
+<span class="n">Button</span><span class="o">.</span><span class="n">wait_for_release</span> <span class="o">=</span> <span class="n">Button</span><span class="o">.</span><span class="n">wait_for_inactive</span>
+
+
+<span class="k">class</span> <span class="nc">LineSensor</span><span class="p">(</span><span class="n">SmoothedInputDevice</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Extends :class:`SmoothedInputDevice` and represents a single pin line</span>
+<span class="sd">    sensor like the TCRT5000 infra-red proximity sensor found in the `CamJam #3</span>
+<span class="sd">    EduKit`_.</span>
+
+<span class="sd">    A typical line sensor has a small circuit board with three pins: VCC, GND,</span>
+<span class="sd">    and OUT. VCC should be connected to a 3V3 pin, GND to one of the ground</span>
+<span class="sd">    pins, and finally OUT to the GPIO specified as the value of the *pin*</span>
+<span class="sd">    parameter in the constructor.</span>
+
+<span class="sd">    The following code will print a line of text indicating when the sensor</span>
+<span class="sd">    detects a line, or stops detecting a line::</span>
+
+<span class="sd">        from gpiozero import LineSensor</span>
+<span class="sd">        from signal import pause</span>
+
+<span class="sd">        sensor = LineSensor(4)</span>
+<span class="sd">        sensor.when_line = lambda: print(&#39;Line detected&#39;)</span>
+<span class="sd">        sensor.when_no_line = lambda: print(&#39;No line detected&#39;)</span>
+<span class="sd">        pause()</span>
+
+<span class="sd">    :type pin: int or str</span>
+<span class="sd">    :param pin:</span>
+<span class="sd">        The GPIO pin which the sensor is connected to. See :ref:`pin-numbering`</span>
+<span class="sd">        for valid pin numbers. If this is :data:`None` a :exc:`GPIODeviceError`</span>
+<span class="sd">        will be raised.</span>
+
+<span class="sd">    :type pull_up: bool or None</span>
+<span class="sd">    :param pull_up:</span>
+<span class="sd">        See descrpition under :class:`InputDevice` for more information.</span>
+
+<span class="sd">    :type active_state: bool or None</span>
+<span class="sd">    :param active_state:</span>
+<span class="sd">        See description under :class:`InputDevice` for more information.</span>
+
+<span class="sd">    :param int queue_len:</span>
+<span class="sd">        The length of the queue used to store values read from the sensor. This</span>
+<span class="sd">        defaults to 5.</span>
+
+<span class="sd">    :param float sample_rate:</span>
+<span class="sd">        The number of values to read from the device (and append to the</span>
+<span class="sd">        internal queue) per second. Defaults to 100.</span>
+
+<span class="sd">    :param float threshold:</span>
+<span class="sd">        Defaults to 0.5. When the average of all values in the internal queue</span>
+<span class="sd">        rises above this value, the sensor will be considered &quot;active&quot; by the</span>
+<span class="sd">        :attr:`~SmoothedInputDevice.is_active` property, and all appropriate</span>
+<span class="sd">        events will be fired.</span>
+
+<span class="sd">    :param bool partial:</span>
+<span class="sd">        When :data:`False` (the default), the object will not return a value</span>
+<span class="sd">        for :attr:`~SmoothedInputDevice.is_active` until the internal queue has</span>
+<span class="sd">        filled with values.  Only set this to :data:`True` if you require</span>
+<span class="sd">        values immediately after object construction.</span>
+
+<span class="sd">    :type pin_factory: Factory or None</span>
+<span class="sd">    :param pin_factory:</span>
+<span class="sd">        See :doc:`api_pins` for more information (this is an advanced feature</span>
+<span class="sd">        which most users can ignore).</span>
+
+<span class="sd">    .. _CamJam #3 EduKit: http://camjam.me/?page_id=1035</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">pin</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">pull_up</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">active_state</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">queue_len</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+            <span class="n">sample_rate</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">partial</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">pin_factory</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">LineSensor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">pin</span><span class="p">,</span> <span class="n">pull_up</span><span class="o">=</span><span class="n">pull_up</span><span class="p">,</span> <span class="n">active_state</span><span class="o">=</span><span class="n">active_state</span><span class="p">,</span>
+            <span class="n">threshold</span><span class="o">=</span><span class="n">threshold</span><span class="p">,</span> <span class="n">queue_len</span><span class="o">=</span><span class="n">queue_len</span><span class="p">,</span>
+            <span class="n">sample_wait</span><span class="o">=</span><span class="mi">1</span> <span class="o">/</span> <span class="n">sample_rate</span><span class="p">,</span> <span class="n">partial</span><span class="o">=</span><span class="n">partial</span><span class="p">,</span>
+            <span class="n">pin_factory</span><span class="o">=</span><span class="n">pin_factory</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_queue</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="k">raise</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">value</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns a value representing the average of the queued values. This</span>
+<span class="sd">        is nearer 0 for black under the sensor, and nearer 1 for white under</span>
+<span class="sd">        the sensor.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">LineSensor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">line_detected</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_active</span>
+
+<span class="n">LineSensor</span><span class="o">.</span><span class="n">when_line</span> <span class="o">=</span> <span class="n">LineSensor</span><span class="o">.</span><span class="n">when_deactivated</span>
+<span class="n">LineSensor</span><span class="o">.</span><span class="n">when_no_line</span> <span class="o">=</span> <span class="n">LineSensor</span><span class="o">.</span><span class="n">when_activated</span>
+<span class="n">LineSensor</span><span class="o">.</span><span class="n">wait_for_line</span> <span class="o">=</span> <span class="n">LineSensor</span><span class="o">.</span><span class="n">wait_for_inactive</span>
+<span class="n">LineSensor</span><span class="o">.</span><span class="n">wait_for_no_line</span> <span class="o">=</span> <span class="n">LineSensor</span><span class="o">.</span><span class="n">wait_for_active</span>
+
+
+<span class="k">class</span> <span class="nc">MotionSensor</span><span class="p">(</span><span class="n">SmoothedInputDevice</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Extends :class:`SmoothedInputDevice` and represents a passive infra-red</span>
+<span class="sd">    (PIR) motion sensor like the sort found in the `CamJam #2 EduKit`_.</span>
+
+<span class="sd">    .. _CamJam #2 EduKit: http://camjam.me/?page_id=623</span>
+
+<span class="sd">    A typical PIR device has a small circuit board with three pins: VCC, OUT,</span>
+<span class="sd">    and GND. VCC should be connected to a 5V pin, GND to one of the ground</span>
+<span class="sd">    pins, and finally OUT to the GPIO specified as the value of the *pin*</span>
+<span class="sd">    parameter in the constructor.</span>
+
+<span class="sd">    The following code will print a line of text when motion is detected::</span>
+
+<span class="sd">        from gpiozero import MotionSensor</span>
+
+<span class="sd">        pir = MotionSensor(4)</span>
+<span class="sd">        pir.wait_for_motion()</span>
+<span class="sd">        print(&quot;Motion detected!&quot;)</span>
+
+<span class="sd">    :type pin: int or str</span>
+<span class="sd">    :param pin:</span>
+<span class="sd">        The GPIO pin which the sensor is connected to. See :ref:`pin-numbering`</span>
+<span class="sd">        for valid pin numbers. If this is :data:`None` a :exc:`GPIODeviceError`</span>
+<span class="sd">        will be raised.</span>
+
+<span class="sd">    :type pull_up: bool or None</span>
+<span class="sd">    :param pull_up:</span>
+<span class="sd">        See descrpition under :class:`InputDevice` for more information.</span>
+
+<span class="sd">    :type active_state: bool or None</span>
+<span class="sd">    :param active_state:</span>
+<span class="sd">        See description under :class:`InputDevice` for more information.</span>
+
+<span class="sd">    :param int queue_len:</span>
+<span class="sd">        The length of the queue used to store values read from the sensor. This</span>
+<span class="sd">        defaults to 1 which effectively disables the queue. If your motion</span>
+<span class="sd">        sensor is particularly &quot;twitchy&quot; you may wish to increase this value.</span>
+
+<span class="sd">    :param float sample_rate:</span>
+<span class="sd">        The number of values to read from the device (and append to the</span>
+<span class="sd">        internal queue) per second. Defaults to 100.</span>
+
+<span class="sd">    :param float threshold:</span>
+<span class="sd">        Defaults to 0.5. When the average of all values in the internal queue</span>
+<span class="sd">        rises above this value, the sensor will be considered &quot;active&quot; by the</span>
+<span class="sd">        :attr:`~SmoothedInputDevice.is_active` property, and all appropriate</span>
+<span class="sd">        events will be fired.</span>
+
+<span class="sd">    :param bool partial:</span>
+<span class="sd">        When :data:`False` (the default), the object will not return a value</span>
+<span class="sd">        for :attr:`~SmoothedInputDevice.is_active` until the internal queue has</span>
+<span class="sd">        filled with values.  Only set this to :data:`True` if you require</span>
+<span class="sd">        values immediately after object construction.</span>
+
+<span class="sd">    :type pin_factory: Factory or None</span>
+<span class="sd">    :param pin_factory:</span>
+<span class="sd">        See :doc:`api_pins` for more information (this is an advanced feature</span>
+<span class="sd">        which most users can ignore).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">pin</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">pull_up</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">active_state</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">queue_len</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">sample_rate</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">partial</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">pin_factory</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">MotionSensor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">pin</span><span class="p">,</span> <span class="n">pull_up</span><span class="o">=</span><span class="n">pull_up</span><span class="p">,</span> <span class="n">active_state</span><span class="o">=</span><span class="n">active_state</span><span class="p">,</span>
+            <span class="n">threshold</span><span class="o">=</span><span class="n">threshold</span><span class="p">,</span> <span class="n">queue_len</span><span class="o">=</span><span class="n">queue_len</span><span class="p">,</span> <span class="n">sample_wait</span><span class="o">=</span><span class="mi">1</span> <span class="o">/</span>
+            <span class="n">sample_rate</span><span class="p">,</span> <span class="n">partial</span><span class="o">=</span><span class="n">partial</span><span class="p">,</span> <span class="n">pin_factory</span><span class="o">=</span><span class="n">pin_factory</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_queue</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="k">raise</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">value</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        With the default *queue_len* of 1, this is effectively boolean where 0</span>
+<span class="sd">        means no motion detected and 1 means motion detected. If you specify</span>
+<span class="sd">        a *queue_len* greater than 1, this will be an averaged value where</span>
+<span class="sd">        values closer to 1 imply motion detection.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">MotionSensor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
+
+<span class="n">MotionSensor</span><span class="o">.</span><span class="n">motion_detected</span> <span class="o">=</span> <span class="n">MotionSensor</span><span class="o">.</span><span class="n">is_active</span>
+<span class="n">MotionSensor</span><span class="o">.</span><span class="n">when_motion</span> <span class="o">=</span> <span class="n">MotionSensor</span><span class="o">.</span><span class="n">when_activated</span>
+<span class="n">MotionSensor</span><span class="o">.</span><span class="n">when_no_motion</span> <span class="o">=</span> <span class="n">MotionSensor</span><span class="o">.</span><span class="n">when_deactivated</span>
+<span class="n">MotionSensor</span><span class="o">.</span><span class="n">wait_for_motion</span> <span class="o">=</span> <span class="n">MotionSensor</span><span class="o">.</span><span class="n">wait_for_active</span>
+<span class="n">MotionSensor</span><span class="o">.</span><span class="n">wait_for_no_motion</span> <span class="o">=</span> <span class="n">MotionSensor</span><span class="o">.</span><span class="n">wait_for_inactive</span>
+
+
+<span class="k">class</span> <span class="nc">LightSensor</span><span class="p">(</span><span class="n">SmoothedInputDevice</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Extends :class:`SmoothedInputDevice` and represents a light dependent</span>
+<span class="sd">    resistor (LDR).</span>
+
+<span class="sd">    Connect one leg of the LDR to the 3V3 pin; connect one leg of a 1µF</span>
+<span class="sd">    capacitor to a ground pin; connect the other leg of the LDR and the other</span>
+<span class="sd">    leg of the capacitor to the same GPIO pin. This class repeatedly discharges</span>
+<span class="sd">    the capacitor, then times the duration it takes to charge (which will vary</span>
+<span class="sd">    according to the light falling on the LDR).</span>
+
+<span class="sd">    The following code will print a line of text when light is detected::</span>
+
+<span class="sd">        from gpiozero import LightSensor</span>
+
+<span class="sd">        ldr = LightSensor(18)</span>
+<span class="sd">        ldr.wait_for_light()</span>
+<span class="sd">        print(&quot;Light detected!&quot;)</span>
+
+<span class="sd">    :type pin: int or str</span>
+<span class="sd">    :param pin:</span>
+<span class="sd">        The GPIO pin which the sensor is attached to. See :ref:`pin-numbering`</span>
+<span class="sd">        for valid pin numbers. If this is :data:`None` a :exc:`GPIODeviceError`</span>
+<span class="sd">        will be raised.</span>
+
+<span class="sd">    :param int queue_len:</span>
+<span class="sd">        The length of the queue used to store values read from the circuit.</span>
+<span class="sd">        This defaults to 5.</span>
+
+<span class="sd">    :param float charge_time_limit:</span>
+<span class="sd">        If the capacitor in the circuit takes longer than this length of time</span>
+<span class="sd">        to charge, it is assumed to be dark. The default (0.01 seconds) is</span>
+<span class="sd">        appropriate for a 1µF capacitor coupled with the LDR from the</span>
+<span class="sd">        `CamJam #2 EduKit`_. You may need to adjust this value for different</span>
+<span class="sd">        valued capacitors or LDRs.</span>
+
+<span class="sd">    :param float threshold:</span>
+<span class="sd">        Defaults to 0.1. When the average of all values in the internal queue</span>
+<span class="sd">        rises above this value, the area will be considered &quot;light&quot;, and all</span>
+<span class="sd">        appropriate events will be fired.</span>
+
+<span class="sd">    :param bool partial:</span>
+<span class="sd">        When :data:`False` (the default), the object will not return a value</span>
+<span class="sd">        for :attr:`~SmoothedInputDevice.is_active` until the internal queue has</span>
+<span class="sd">        filled with values.  Only set this to :data:`True` if you require</span>
+<span class="sd">        values immediately after object construction.</span>
+
+<span class="sd">    :type pin_factory: Factory or None</span>
+<span class="sd">    :param pin_factory:</span>
+<span class="sd">        See :doc:`api_pins` for more information (this is an advanced feature</span>
+<span class="sd">        which most users can ignore).</span>
+
+<span class="sd">    .. _CamJam #2 EduKit: http://camjam.me/?page_id=623</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">pin</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">queue_len</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">charge_time_limit</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span>
+            <span class="n">threshold</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">partial</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">pin_factory</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">LightSensor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">pin</span><span class="p">,</span> <span class="n">pull_up</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="n">threshold</span><span class="p">,</span> <span class="n">queue_len</span><span class="o">=</span><span class="n">queue_len</span><span class="p">,</span>
+            <span class="n">sample_wait</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">partial</span><span class="o">=</span><span class="n">partial</span><span class="p">,</span> <span class="n">pin_factory</span><span class="o">=</span><span class="n">pin_factory</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_charge_time_limit</span> <span class="o">=</span> <span class="n">charge_time_limit</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_charge_time</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_charged</span> <span class="o">=</span> <span class="n">Event</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pin</span><span class="o">.</span><span class="n">edges</span> <span class="o">=</span> <span class="s1">&#39;rising&#39;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pin</span><span class="o">.</span><span class="n">bounce</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pin</span><span class="o">.</span><span class="n">when_changed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cap_charged</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_queue</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="k">raise</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">charge_time_limit</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_charge_time_limit</span>
+
+    <span class="k">def</span> <span class="nf">_cap_charged</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ticks</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_charge_time</span> <span class="o">=</span> <span class="n">ticks</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_charged</span><span class="o">.</span><span class="n">set</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_read</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Drain charge from the capacitor</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pin</span><span class="o">.</span><span class="n">function</span> <span class="o">=</span> <span class="s1">&#39;output&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pin</span><span class="o">.</span><span class="n">state</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">sleep</span><span class="p">(</span><span class="mf">0.1</span><span class="p">)</span>
+        <span class="c1"># Time the charging of the capacitor</span>
+        <span class="n">start</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pin_factory</span><span class="o">.</span><span class="n">ticks</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_charge_time</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_charged</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pin</span><span class="o">.</span><span class="n">function</span> <span class="o">=</span> <span class="s1">&#39;input&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_charged</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">charge_time_limit</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_charge_time</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mf">0.0</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">pin_factory</span><span class="o">.</span><span class="n">ticks_diff</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_charge_time</span><span class="p">,</span> <span class="n">start</span><span class="p">)</span> <span class="o">/</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">charge_time_limit</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">value</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns a value between 0 (dark) and 1 (light).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">LightSensor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
+
+<span class="n">LightSensor</span><span class="o">.</span><span class="n">light_detected</span> <span class="o">=</span> <span class="n">LightSensor</span><span class="o">.</span><span class="n">is_active</span>
+<span class="n">LightSensor</span><span class="o">.</span><span class="n">when_light</span> <span class="o">=</span> <span class="n">LightSensor</span><span class="o">.</span><span class="n">when_activated</span>
+<span class="n">LightSensor</span><span class="o">.</span><span class="n">when_dark</span> <span class="o">=</span> <span class="n">LightSensor</span><span class="o">.</span><span class="n">when_deactivated</span>
+<span class="n">LightSensor</span><span class="o">.</span><span class="n">wait_for_light</span> <span class="o">=</span> <span class="n">LightSensor</span><span class="o">.</span><span class="n">wait_for_active</span>
+<span class="n">LightSensor</span><span class="o">.</span><span class="n">wait_for_dark</span> <span class="o">=</span> <span class="n">LightSensor</span><span class="o">.</span><span class="n">wait_for_inactive</span>
+
+
+<span class="k">class</span> <span class="nc">DistanceSensor</span><span class="p">(</span><span class="n">SmoothedInputDevice</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Extends :class:`SmoothedInputDevice` and represents an HC-SR04 ultrasonic</span>
+<span class="sd">    distance sensor, as found in the `CamJam #3 EduKit`_.</span>
+
+<span class="sd">    The distance sensor requires two GPIO pins: one for the *trigger* (marked</span>
+<span class="sd">    TRIG on the sensor) and another for the *echo* (marked ECHO on the sensor).</span>
+<span class="sd">    However, a voltage divider is required to ensure the 5V from the ECHO pin</span>
+<span class="sd">    doesn&#39;t damage the Pi. Wire your sensor according to the following</span>
+<span class="sd">    instructions:</span>
+
+<span class="sd">    1. Connect the GND pin of the sensor to a ground pin on the Pi.</span>
+
+<span class="sd">    2. Connect the TRIG pin of the sensor a GPIO pin.</span>
+
+<span class="sd">    3. Connect one end of a 330Ω resistor to the ECHO pin of the sensor.</span>
+
+<span class="sd">    4. Connect one end of a 470Ω resistor to the GND pin of the sensor.</span>
+
+<span class="sd">    5. Connect the free ends of both resistors to another GPIO pin. This forms</span>
+<span class="sd">       the required `voltage divider`_.</span>
+
+<span class="sd">    6. Finally, connect the VCC pin of the sensor to a 5V pin on the Pi.</span>
+
+<span class="sd">    Alternatively, the 3V3 tolerant HC-SR04P sensor (which does not require a</span>
+<span class="sd">    voltage divider) will work with this class.</span>
+<span class="sd">    </span>
+
+<span class="sd">    .. note::</span>
+
+<span class="sd">        If you do not have the precise values of resistor specified above,</span>
+<span class="sd">        don&#39;t worry! What matters is the *ratio* of the resistors to each</span>
+<span class="sd">        other.</span>
+
+<span class="sd">        You also don&#39;t need to be absolutely precise; the `voltage divider`_</span>
+<span class="sd">        given above will actually output ~3V (rather than 3.3V). A simple 2:3</span>
+<span class="sd">        ratio will give 3.333V which implies you can take three resistors of</span>
+<span class="sd">        equal value, use one of them instead of the 330Ω resistor, and two of</span>
+<span class="sd">        them in series instead of the 470Ω resistor.</span>
+
+<span class="sd">    .. _voltage divider: https://en.wikipedia.org/wiki/Voltage_divider</span>
+
+<span class="sd">    The following code will periodically report the distance measured by the</span>
+<span class="sd">    sensor in cm assuming the TRIG pin is connected to GPIO17, and the ECHO</span>
+<span class="sd">    pin to GPIO18::</span>
+
+<span class="sd">        from gpiozero import DistanceSensor</span>
+<span class="sd">        from time import sleep</span>
+
+<span class="sd">        sensor = DistanceSensor(echo=18, trigger=17)</span>
+<span class="sd">        while True:</span>
+<span class="sd">            print(&#39;Distance: &#39;, sensor.distance * 100)</span>
+<span class="sd">            sleep(1)</span>
+
+<span class="sd">    .. note::</span>
+
+<span class="sd">        For improved accuracy, use the pigpio pin driver rather than the default</span>
+<span class="sd">        RPi.GPIO driver (pigpio uses DMA sampling for much more precise edge</span>
+<span class="sd">        timing). This is particularly relevant if you&#39;re using Pi 1 or Pi Zero.</span>
+<span class="sd">        See :ref:`changing-pin-factory` for further information.</span>
+
+<span class="sd">    :type echo: int or str</span>
+<span class="sd">    :param echo:</span>
+<span class="sd">        The GPIO pin which the ECHO pin is connected to. See</span>
+<span class="sd">        :ref:`pin-numbering` for valid pin numbers. If this is :data:`None` a</span>
+<span class="sd">        :exc:`GPIODeviceError` will be raised.</span>
+
+<span class="sd">    :type trigger: int or str</span>
+<span class="sd">    :param trigger:</span>
+<span class="sd">        The GPIO pin which the TRIG pin is connected to. See</span>
+<span class="sd">        :ref:`pin-numbering` for valid pin numbers. If this is :data:`None` a</span>
+<span class="sd">        :exc:`GPIODeviceError` will be raised.</span>
+
+<span class="sd">    :param int queue_len:</span>
+<span class="sd">        The length of the queue used to store values read from the sensor.</span>
+<span class="sd">        This defaults to 30.</span>
+
+<span class="sd">    :param float max_distance:</span>
+<span class="sd">        The :attr:`value` attribute reports a normalized value between 0 (too</span>
+<span class="sd">        close to measure) and 1 (maximum distance). This parameter specifies</span>
+<span class="sd">        the maximum distance expected in meters. This defaults to 1.</span>
+
+<span class="sd">    :param float threshold_distance:</span>
+<span class="sd">        Defaults to 0.3. This is the distance (in meters) that will trigger the</span>
+<span class="sd">        ``in_range`` and ``out_of_range`` events when crossed.</span>
+
+<span class="sd">    :param bool partial:</span>
+<span class="sd">        When :data:`False` (the default), the object will not return a value</span>
+<span class="sd">        for :attr:`~SmoothedInputDevice.is_active` until the internal queue has</span>
+<span class="sd">        filled with values.  Only set this to :data:`True` if you require</span>
+<span class="sd">        values immediately after object construction.</span>
+
+<span class="sd">    :type pin_factory: Factory or None</span>
+<span class="sd">    :param pin_factory:</span>
+<span class="sd">        See :doc:`api_pins` for more information (this is an advanced feature</span>
+<span class="sd">        which most users can ignore).</span>
+
+<span class="sd">    .. _CamJam #3 EduKit: http://camjam.me/?page_id=1035</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">ECHO_LOCK</span> <span class="o">=</span> <span class="n">Lock</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">echo</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">trigger</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">queue_len</span><span class="o">=</span><span class="mi">9</span><span class="p">,</span> <span class="n">max_distance</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">threshold_distance</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span> <span class="n">partial</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">pin_factory</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_trigger</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">DistanceSensor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">echo</span><span class="p">,</span> <span class="n">pull_up</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">queue_len</span><span class="o">=</span><span class="n">queue_len</span><span class="p">,</span> <span class="n">sample_wait</span><span class="o">=</span><span class="mf">0.06</span><span class="p">,</span>
+            <span class="n">partial</span><span class="o">=</span><span class="n">partial</span><span class="p">,</span> <span class="n">ignore</span><span class="o">=</span><span class="nb">frozenset</span><span class="p">({</span><span class="kc">None</span><span class="p">}),</span> <span class="n">pin_factory</span><span class="o">=</span><span class="n">pin_factory</span>
+        <span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">max_distance</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;invalid maximum distance (must be positive)&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_max_distance</span> <span class="o">=</span> <span class="n">max_distance</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">threshold</span> <span class="o">=</span> <span class="n">threshold_distance</span> <span class="o">/</span> <span class="n">max_distance</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">speed_of_sound</span> <span class="o">=</span> <span class="mf">343.26</span> <span class="c1"># m/s</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_trigger</span> <span class="o">=</span> <span class="n">GPIODevice</span><span class="p">(</span><span class="n">trigger</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_echo</span> <span class="o">=</span> <span class="n">Event</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_echo_rise</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_echo_fall</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_trigger</span><span class="o">.</span><span class="n">pin</span><span class="o">.</span><span class="n">function</span> <span class="o">=</span> <span class="s1">&#39;output&#39;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_trigger</span><span class="o">.</span><span class="n">pin</span><span class="o">.</span><span class="n">state</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pin</span><span class="o">.</span><span class="n">edges</span> <span class="o">=</span> <span class="s1">&#39;both&#39;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pin</span><span class="o">.</span><span class="n">bounce</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pin</span><span class="o">.</span><span class="n">when_changed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_echo_changed</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_queue</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="k">raise</span>
+
+    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_trigger</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trigger</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_trigger</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">DistanceSensor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">max_distance</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        The maximum distance that the sensor will measure in meters. This value</span>
+<span class="sd">        is specified in the constructor and is used to provide the scaling for</span>
+<span class="sd">        the :attr:`~SmoothedInputDevice.value` attribute. When :attr:`distance`</span>
+<span class="sd">        is equal to :attr:`max_distance`, :attr:`~SmoothedInputDevice.value`</span>
+<span class="sd">        will be 1.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_max_distance</span>
+
+    <span class="nd">@max_distance</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">max_distance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;invalid maximum distance (must be positive)&#39;</span><span class="p">)</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">threshold_distance</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_max_distance</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">threshold_distance</span> <span class="o">=</span> <span class="n">t</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">threshold_distance</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        The distance, measured in meters, that will trigger the</span>
+<span class="sd">        :attr:`when_in_range` and :attr:`when_out_of_range` events when</span>
+<span class="sd">        crossed. This is simply a meter-scaled variant of the usual</span>
+<span class="sd">        :attr:`~SmoothedInputDevice.threshold` attribute.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">threshold</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_distance</span>
+
+    <span class="nd">@threshold_distance</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">threshold_distance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">threshold</span> <span class="o">=</span> <span class="n">value</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_distance</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">distance</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the current distance measured by the sensor in meters. Note</span>
+<span class="sd">        that this property will have a value between 0 and</span>
+<span class="sd">        :attr:`max_distance`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_max_distance</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">value</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns a value between 0, indicating the reflector is either touching</span>
+<span class="sd">        the sensor or is sufficiently near that the sensor can&#39;t tell the</span>
+<span class="sd">        difference, and 1, indicating the reflector is at or beyond the</span>
+<span class="sd">        specified *max_distance*.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">DistanceSensor</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">trigger</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the :class:`Pin` that the sensor&#39;s trigger is connected to.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trigger</span><span class="o">.</span><span class="n">pin</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">echo</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the :class:`Pin` that the sensor&#39;s echo is connected to. This</span>
+<span class="sd">        is simply an alias for the usual :attr:`~GPIODevice.pin` attribute.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">pin</span>
+
+    <span class="k">def</span> <span class="nf">_echo_changed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ticks</span><span class="p">,</span> <span class="n">level</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">level</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_echo_rise</span> <span class="o">=</span> <span class="n">ticks</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_echo_fall</span> <span class="o">=</span> <span class="n">ticks</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_echo</span><span class="o">.</span><span class="n">set</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_read</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Wait up to 50ms for the echo pin to fall to low (the maximum echo</span>
+        <span class="c1"># pulse is 35ms so this gives some leeway); if it doesn&#39;t something is</span>
+        <span class="c1"># horribly wrong (most likely at the hardware level)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pin</span><span class="o">.</span><span class="n">state</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_echo</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span><span class="mf">0.05</span><span class="p">):</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="n">DistanceSensorNoEcho</span><span class="p">(</span><span class="s1">&#39;echo pin set high&#39;</span><span class="p">))</span>
+                <span class="k">return</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_echo</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_echo_fall</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_echo_rise</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1"># Obtain the class-level ECHO_LOCK to ensure multiple distance sensors</span>
+        <span class="c1"># don&#39;t listen for each other&#39;s &quot;pings&quot;</span>
+        <span class="k">with</span> <span class="n">DistanceSensor</span><span class="o">.</span><span class="n">ECHO_LOCK</span><span class="p">:</span>
+            <span class="c1"># Fire the trigger</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_trigger</span><span class="o">.</span><span class="n">pin</span><span class="o">.</span><span class="n">state</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">sleep</span><span class="p">(</span><span class="mf">0.00001</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_trigger</span><span class="o">.</span><span class="n">pin</span><span class="o">.</span><span class="n">state</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="c1"># Wait up to 100ms for the echo pin to rise and fall (35ms is the</span>
+            <span class="c1"># maximum pulse time, but the pre-rise time is unspecified in the</span>
+            <span class="c1"># &quot;datasheet&quot;; 100ms seems sufficiently long to conclude something</span>
+            <span class="c1"># has failed)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_echo</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span><span class="mf">0.1</span><span class="p">):</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_echo_fall</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_echo_rise</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">distance</span> <span class="o">=</span> <span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">pin_factory</span><span class="o">.</span><span class="n">ticks_diff</span><span class="p">(</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">_echo_fall</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_echo_rise</span><span class="p">)</span> <span class="o">*</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">speed_of_sound</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">)</span>
+                    <span class="k">return</span> <span class="nb">min</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">distance</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">_max_distance</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c1"># If we only saw the falling edge it means we missed</span>
+                    <span class="c1"># the echo because it was too fast</span>
+                    <span class="k">return</span> <span class="kc">None</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># The echo pin never rose or fell; something&#39;s gone horribly</span>
+                <span class="c1"># wrong</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="n">DistanceSensorNoEcho</span><span class="p">(</span><span class="s1">&#39;no echo received&#39;</span><span class="p">))</span>
+                <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">in_range</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_active</span>
+
+<span class="n">DistanceSensor</span><span class="o">.</span><span class="n">when_out_of_range</span> <span class="o">=</span> <span class="n">DistanceSensor</span><span class="o">.</span><span class="n">when_activated</span>
+<span class="n">DistanceSensor</span><span class="o">.</span><span class="n">when_in_range</span> <span class="o">=</span> <span class="n">DistanceSensor</span><span class="o">.</span><span class="n">when_deactivated</span>
+<span class="n">DistanceSensor</span><span class="o">.</span><span class="n">wait_for_out_of_range</span> <span class="o">=</span> <span class="n">DistanceSensor</span><span class="o">.</span><span class="n">wait_for_active</span>
+<span class="n">DistanceSensor</span><span class="o">.</span><span class="n">wait_for_in_range</span> <span class="o">=</span> <span class="n">DistanceSensor</span><span class="o">.</span><span class="n">wait_for_inactive</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">LEDScoreboard</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../main.html">main.py</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nhl.html">NHL module</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2021, Amey Khairnar.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.8</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
