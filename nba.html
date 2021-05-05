@@ -1,0 +1,171 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>NBA module &#8212; LEDScoreboard alpha documentation</title>
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="MLB module" href="mlb.html" />
+    <link rel="prev" title="NHL module" href="nhl.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="nba-module">
+<h1>NBA module<a class="headerlink" href="#nba-module" title="Permalink to this headline">¶</a></h1>
+<section id="module-nba">
+<span id="init-py"></span><h2>__init__.py<a class="headerlink" href="#module-nba" title="Permalink to this headline">¶</a></h2>
+<dl class="py function">
+<dt id="nba.draw_board">
+<code class="sig-prename descclassname"><span class="pre">nba.</span></code><code class="sig-name descname"><span class="pre">draw_board</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/nba.html#draw_board"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#nba.draw_board" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draw components of NBA game</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Return -1 if no favorite game.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-nba.game">
+<span id="game-py"></span><h2>game.py<a class="headerlink" href="#module-nba.game" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="nba.game.Game">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">nba.game.</span></code><code class="sig-name descname"><span class="pre">Game</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">game_info</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">any</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/nba/game.html#Game"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#nba.game.Game" title="Permalink to this definition">¶</a></dt>
+<dd><p>Represent a scheduled NBA game</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>game_info</strong> (<em>Dict</em><em>[</em><em>str</em><em>, </em><em>any</em><em>]</em>) – Dictionary generated from JSON object</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="nba.game.Game.get_matchup">
+<code class="sig-name descname"><span class="pre">get_matchup</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">width</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> &#x2192; <span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><a class="reference internal" href="_modules/nba/game.html#Game.get_matchup"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#nba.game.Game.get_matchup" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get information of a single game.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Game information in a dictionary.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>Dict[str, str]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="nba.game.Game.is_favorite_match">
+<code class="sig-name descname"><span class="pre">is_favorite_match</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">favorites</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> &#x2192; <span class="pre">bool</span><a class="reference internal" href="_modules/nba/game.html#Game.is_favorite_match"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#nba.game.Game.is_favorite_match" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check if game has a team favorited by the user.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>True if game if scheduled for today.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-nba.teams">
+<span id="teams-py"></span><h2>teams.py<a class="headerlink" href="#module-nba.teams" title="Permalink to this headline">¶</a></h2>
+<p>Abbreviation information about NBA teams</p>
+</section>
+</section>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">LEDScoreboard</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="config.html">config.py</a></li>
+<li class="toctree-l1"><a class="reference internal" href="utils.html">utils.py</a></li>
+<li class="toctree-l1"><a class="reference internal" href="nhl.html">NHL module</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">NBA module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#module-nba">__init__.py</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-nba.game">game.py</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-nba.teams">teams.py</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="mlb.html">MLB module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="laliga.html">LaLiga module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="other.html">Other files</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="nhl.html" title="previous chapter">NHL module</a></li>
+      <li>Next: <a href="mlb.html" title="next chapter">MLB module</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.5.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.8</a>
+      
+      |
+      <a href="_sources/nba.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

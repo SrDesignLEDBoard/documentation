@@ -1,0 +1,194 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>laliga.game &#8212; LEDScoreboard alpha documentation</title>
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for laliga.game</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">utils</span>
+<span class="kn">import</span> <span class="nn">config</span>
+<span class="kn">import</span> <span class="nn">constants</span>
+<span class="kn">import</span> <span class="nn">datetime</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Dict</span>
+
+<span class="kn">from</span> <span class="nn">.teams</span> <span class="k">import</span> <span class="n">abbreviations_full</span>
+
+<div class="viewcode-block" id="Game"><a class="viewcode-back" href="../../laliga.html#laliga.game.Game">[docs]</a><span class="k">class</span> <span class="nc">Game</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Represent a scheduled LaLiga game</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        game_info (Dict[str, any]): Dictionary generated from JSON object</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">game_info</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">any</span><span class="p">],</span> <span class="n">a_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">h_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Parse JSON to attributes</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            game_info (Dict[str, any]): Dictionary generated from JSON object</span>
+<span class="sd">            a_name (str): Name of away team</span>
+<span class="sd">            h_name (str): Name of home team</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">game_id</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">game_info</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">game_stage</span> <span class="o">=</span> <span class="n">game_info</span><span class="p">[</span><span class="s1">&#39;status&#39;</span><span class="p">][</span><span class="s1">&#39;type&#39;</span><span class="p">][</span><span class="s1">&#39;description&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">game_status</span> <span class="o">=</span> <span class="n">game_info</span><span class="p">[</span><span class="s1">&#39;status&#39;</span><span class="p">][</span><span class="s1">&#39;type&#39;</span><span class="p">][</span><span class="s1">&#39;state&#39;</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">game_info</span><span class="p">[</span><span class="s1">&#39;status&#39;</span><span class="p">][</span><span class="s1">&#39;displayClock&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;0&#39;&quot;</span><span class="p">:</span>
+            <span class="c1">#self.game_clock = game_info[&#39;status&#39;][&#39;type&#39;][&#39;shortDetail&#39;]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">game_clock</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">game_info</span><span class="p">[</span><span class="s1">&#39;date&#39;</span><span class="p">],</span> \
+                              <span class="s1">&#39;%Y-%m-</span><span class="si">%d</span><span class="s1">T%H:%SZ&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%H:%S&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">game_period</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># self.game_clock = game_info[&#39;status&#39;][&#39;displayClock&#39;]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">game_clock</span> <span class="o">=</span> <span class="n">game_info</span><span class="p">[</span><span class="s1">&#39;status&#39;</span><span class="p">][</span><span class="s1">&#39;type&#39;</span><span class="p">][</span><span class="s1">&#39;shortDetail&#39;</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">game_period</span> <span class="o">=</span> <span class="n">game_info</span><span class="p">[</span><span class="s1">&#39;status&#39;</span><span class="p">][</span><span class="s1">&#39;period&#39;</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">away_name</span> <span class="o">=</span> <span class="n">a_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">away_score</span> <span class="o">=</span> <span class="n">game_info</span><span class="p">[</span><span class="s1">&#39;competitions&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;competitors&#39;</span><span class="p">][</span><span class="mi">1</span><span class="p">][</span><span class="s1">&#39;score&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">home_name</span> <span class="o">=</span> <span class="n">h_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">home_score</span> <span class="o">=</span> <span class="n">game_info</span><span class="p">[</span><span class="s1">&#39;competitions&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;competitors&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;score&#39;</span><span class="p">]</span>
+
+<div class="viewcode-block" id="Game.get_matchup"><a class="viewcode-back" href="../../laliga.html#laliga.game.Game.get_matchup">[docs]</a>    <span class="k">def</span> <span class="nf">get_matchup</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">width</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Get information of a single game.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Dict[str, str]: Game information in a dictionary.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">matchup</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;home&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">home_name</span><span class="p">,</span>
+            <span class="s2">&quot;away&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">away_name</span><span class="p">,</span>
+            <span class="s2">&quot;stage&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">game_stage</span><span class="p">,</span>
+            <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">game_status</span><span class="p">,</span>
+            <span class="s2">&quot;clock&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">game_clock</span>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">game_stage</span> <span class="o">!=</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">away_score</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">home_score</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
+                <span class="n">matchup</span><span class="p">[</span><span class="s2">&quot;score&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;0 - 0&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">matchup</span><span class="p">[</span><span class="s2">&quot;score&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">f</span><span class="s2">&quot;</span><span class="si">{self.away_score}</span><span class="s2"> - </span><span class="si">{self.home_score}</span><span class="s2">&quot;</span>
+
+        <span class="n">matchup</span><span class="p">[</span><span class="s1">&#39;period&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;H&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">game_period</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">matchup</span></div></div>
+
+
+<span class="k">class</span> <span class="nc">Scores</span><span class="p">:</span>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">get_scores</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]:</span>
+        <span class="sd">&quot;&quot;&quot;Get a list of scores/games that are on-going or planned for the day (in that order)</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            List[Tuple[str, str]]: List of python dicts that contain information of today&#39;s games.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">get_JSON</span><span class="p">(</span><span class="n">constants</span><span class="o">.</span><span class="n">LALIGA_API</span><span class="p">)</span>
+            
+            <span class="c1"># &quot;&quot;&quot;Only focus on the games scheduled today&quot;&quot;&quot;</span>
+            <span class="n">all_games</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;events&#39;</span><span class="p">]</span>
+
+            <span class="n">gs</span> <span class="o">=</span> <span class="p">[]</span>
+
+            <span class="k">for</span> <span class="n">game_info</span> <span class="ow">in</span> <span class="n">all_games</span><span class="p">:</span>
+                <span class="c1"># &quot;&quot;&quot;Only add teams that are the user&#39;s favorites&quot;&quot;&quot;</span>
+                <span class="n">away_name</span> <span class="o">=</span> <span class="n">abbreviations_full</span><span class="p">[</span><span class="n">game_info</span><span class="p">[</span><span class="s1">&#39;competitions&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;competitors&#39;</span><span class="p">][</span><span class="mi">1</span><span class="p">][</span><span class="s1">&#39;team&#39;</span><span class="p">][</span><span class="s1">&#39;name&#39;</span><span class="p">]]</span>
+                <span class="n">home_name</span> <span class="o">=</span> <span class="n">abbreviations_full</span><span class="p">[</span><span class="n">game_info</span><span class="p">[</span><span class="s1">&#39;competitions&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;competitors&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;team&#39;</span><span class="p">][</span><span class="s1">&#39;name&#39;</span><span class="p">]]</span>
+
+                <span class="k">if</span> <span class="n">away_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">LALIGA_FAVS</span> <span class="ow">and</span> \
+                   <span class="n">home_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">LALIGA_FAVS</span><span class="p">:</span>
+                    <span class="k">continue</span>
+
+                <span class="n">game</span> <span class="o">=</span> <span class="n">Game</span><span class="p">(</span><span class="n">game_info</span><span class="p">,</span> <span class="n">away_name</span><span class="p">,</span> <span class="n">home_name</span><span class="p">)</span>
+
+                <span class="n">gs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">game</span><span class="o">.</span><span class="n">get_matchup</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">COLS</span><span class="p">))</span>
+
+            <span class="k">return</span> <span class="n">gs</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">print</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">LEDScoreboard</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../config.html">config.py</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../utils.html">utils.py</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nhl.html">NHL module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../nba.html">NBA module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mlb.html">MLB module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../laliga.html">LaLiga module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../other.html">Other files</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  <li><a href="../laliga.html">laliga</a><ul>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.5.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.8</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
