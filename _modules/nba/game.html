@@ -34,12 +34,17 @@
 <span class="kn">import</span> <span class="nn">datetime</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Dict</span>
 
+
 <div class="viewcode-block" id="Game"><a class="viewcode-back" href="../../nba.html#nba.game.Game">[docs]</a><span class="k">class</span> <span class="nc">Game</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Represent a scheduled NBA game</span>
+    <span class="sd">&quot;&quot;&quot;Represent a scheduled NBA game.</span>
+
+<span class="sd">    Game object first parses the JSON dict information.</span>
+<span class="sd">    Also contains methods to check if the game is of a favorite team.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        game_info (Dict[str, any]): Dictionary generated from JSON object</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">game_info</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">any</span><span class="p">]):</span>
         <span class="sd">&quot;&quot;&quot;Parse JSON to attributes</span>
 
@@ -60,8 +65,12 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">home_name</span> <span class="o">=</span> <span class="n">game_info</span><span class="p">[</span><span class="s1">&#39;hTeam&#39;</span><span class="p">][</span><span class="s1">&#39;triCode&#39;</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">home_score</span> <span class="o">=</span> <span class="n">game_info</span><span class="p">[</span><span class="s1">&#39;hTeam&#39;</span><span class="p">][</span><span class="s1">&#39;score&#39;</span><span class="p">]</span>
 
-<div class="viewcode-block" id="Game.get_matchup"><a class="viewcode-back" href="../../nba.html#nba.game.Game.get_matchup">[docs]</a>    <span class="k">def</span> <span class="nf">get_matchup</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">width</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<div class="viewcode-block" id="Game.get_matchup"><a class="viewcode-back" href="../../nba.html#nba.game.Game.get_matchup">[docs]</a>    <span class="k">def</span> <span class="nf">get_matchup</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
         <span class="sd">&quot;&quot;&quot;Get information of a single game.</span>
+
+<span class="sd">        Simply game information into a dictionary to be used by the draw_board() function.</span>
+<span class="sd">        Returns a dictionary with names for home and away team, game period, game stage, game status, game clock,</span>
+<span class="sd">        score, and starttime.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            Dict[str, str]: Game information in a dictionary.</span>
@@ -87,8 +96,11 @@
 <div class="viewcode-block" id="Game.is_favorite_match"><a class="viewcode-back" href="../../nba.html#nba.game.Game.is_favorite_match">[docs]</a>    <span class="k">def</span> <span class="nf">is_favorite_match</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">favorites</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Check if game has a team favorited by the user.</span>
 
+<span class="sd">        Since only the games included in the favorite config are shown, this function checks that</span>
+<span class="sd">        either home or away team is a favorite.</span>
+
 <span class="sd">        Returns:</span>
-<span class="sd">            bool: True if game if scheduled for today.</span>
+<span class="sd">            bool: True if game if either home or away team is a favorite.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">for</span> <span class="n">team</span> <span class="ow">in</span> <span class="n">favorites</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">team</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">home_name</span> <span class="ow">or</span> <span class="n">team</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">away_name</span><span class="p">:</span>
@@ -96,10 +108,15 @@
         <span class="k">return</span> <span class="kc">False</span></div></div>
 
 
-<span class="k">class</span> <span class="nc">Scores</span><span class="p">:</span>
-    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="Scores"><a class="viewcode-back" href="../../nba.html#nba.game.Scores">[docs]</a><span class="k">class</span> <span class="nc">Scores</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Scores Class with static function to get scores for the leauge.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="Scores.get_scores"><a class="viewcode-back" href="../../nba.html#nba.game.Scores.get_scores">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">get_scores</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]:</span>
-        <span class="sd">&quot;&quot;&quot;Get a list of scores/games that are on-going or planned for the day (in that order)</span>
+        <span class="sd">&quot;&quot;&quot;Get a list of favorite scores/games that are on-going or planned for the day.</span>
+
+<span class="sd">        First, calls for the request of JSON from NBA API and creates Game objects from the data.</span>
+<span class="sd">        Then, checks for the games scheduled for the day and if the games are favorites.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            List[Tuple[str, str]]: List of python dicts that contain information of today&#39;s games.</span>
@@ -107,7 +124,8 @@
         <span class="n">x</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
 
         <span class="k">try</span><span class="p">:</span>
-            <span class="n">data</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">get_JSON</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;http://data.nba.net/prod/v1/{x.strftime(&#39;%Y%m</span><span class="si">%d</span><span class="s2">&#39;)}/scoreboard.json&quot;</span><span class="p">)</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">get_JSON</span><span class="p">(</span>
+                <span class="n">f</span><span class="s2">&quot;http://data.nba.net/prod/v1/{x.strftime(&#39;%Y%m</span><span class="si">%d</span><span class="s2">&#39;)}/scoreboard.json&quot;</span><span class="p">)</span>
             <span class="n">games</span> <span class="o">=</span> <span class="p">[]</span>
 
             <span class="k">for</span> <span class="n">game_info</span> <span class="ow">in</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;games&#39;</span><span class="p">]:</span>
@@ -118,11 +136,11 @@
                 <span class="k">if</span> <span class="ow">not</span> <span class="n">game</span><span class="o">.</span><span class="n">is_favorite_match</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">NBA_FAVS</span><span class="p">):</span>
                     <span class="k">continue</span>
 
-                <span class="n">gs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">game</span><span class="o">.</span><span class="n">get_matchup</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">COLS</span><span class="p">))</span>
+                <span class="n">gs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">game</span><span class="o">.</span><span class="n">get_matchup</span><span class="p">())</span>
 
             <span class="k">return</span> <span class="n">gs</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="k">return</span> <span class="nb">print</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+            <span class="k">return</span> <span class="nb">print</span><span class="p">(</span><span class="n">e</span><span class="p">)</span></div></div>
 </pre></div>
 
           </div>

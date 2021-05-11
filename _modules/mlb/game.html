@@ -36,45 +36,55 @@
 
 <span class="kn">from</span> <span class="nn">.teams</span> <span class="k">import</span> <span class="n">abbreviations_full</span>
 
+
 <div class="viewcode-block" id="Game"><a class="viewcode-back" href="../../mlb.html#mlb.game.Game">[docs]</a><span class="k">class</span> <span class="nc">Game</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Represent a scheduled MLB game</span>
+    <span class="sd">&quot;&quot;&quot;Represent a scheduled MLB game.</span>
+
+<span class="sd">    Game object first parses the JSON dict information.</span>
+<span class="sd">    Also contains method to get matchup as a simplified dict.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        game_info (Dict[str, any]): Dictionary generated from JSON object</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">game_info</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">any</span><span class="p">],</span> <span class="n">a_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">h_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span> 
-        <span class="c1"># &quot;&quot;&quot;Open new json file that includes live updates to the game&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">game_info</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">any</span><span class="p">],</span> <span class="n">a_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">h_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Parse JSON to attributes</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            game_info (Dict[str, any]): Dictionary generated from JSON object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Open new json file that includes live updates to the game</span>
         <span class="n">liveData</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">get_JSON</span><span class="p">(</span><span class="s1">&#39;http://statsapi.mlb.com&#39;</span><span class="o">+</span><span class="n">game_info</span><span class="p">[</span><span class="s1">&#39;link&#39;</span><span class="p">])</span>
 
-        <span class="c1"># &quot;&quot;&quot;Parse JSON to attributes&quot;&quot;&quot;</span>
+        <span class="c1"># Parse JSON to attributes</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">game_id</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">game_info</span><span class="p">[</span><span class="s1">&#39;gamePk&#39;</span><span class="p">])</span>
 
-        <span class="c1"># &quot;&quot;&quot;Possible States: Scheduled, Pre-Game, Warmup, In Progress, Final&quot;&quot;&quot;</span>
+        <span class="c1"># Possible States: Scheduled, Pre-Game, Warmup, In Progress, Final</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">game_stage</span> <span class="o">=</span> <span class="n">game_info</span><span class="p">[</span><span class="s1">&#39;status&#39;</span><span class="p">][</span><span class="s1">&#39;detailedState&#39;</span><span class="p">]</span>
 
-        <span class="c1"># &quot;&quot;&quot;Capitalize the status of the game so its easier to be displayed&quot;&quot;&quot;</span>
+        <span class="c1"># Capitalize the status of the game so its easier to be displayed</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">game_status</span> <span class="o">=</span> <span class="n">game_info</span><span class="p">[</span><span class="s1">&#39;status&#39;</span><span class="p">][</span><span class="s1">&#39;abstractGameState&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
 
         <span class="k">if</span> <span class="s1">&#39;score&#39;</span> <span class="ow">in</span> <span class="n">game_info</span><span class="p">[</span><span class="s1">&#39;teams&#39;</span><span class="p">][</span><span class="s1">&#39;away&#39;</span><span class="p">]</span> <span class="ow">or</span> \
-           <span class="s1">&#39;score&#39;</span> <span class="ow">in</span> <span class="n">game_info</span><span class="p">[</span><span class="s1">&#39;teams&#39;</span><span class="p">][</span><span class="s1">&#39;home&#39;</span><span class="p">]</span> <span class="p">:</span>
+           <span class="s1">&#39;score&#39;</span> <span class="ow">in</span> <span class="n">game_info</span><span class="p">[</span><span class="s1">&#39;teams&#39;</span><span class="p">][</span><span class="s1">&#39;home&#39;</span><span class="p">]:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">away_score</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">game_info</span><span class="p">[</span><span class="s1">&#39;teams&#39;</span><span class="p">][</span><span class="s1">&#39;away&#39;</span><span class="p">][</span><span class="s1">&#39;score&#39;</span><span class="p">])</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">home_score</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">game_info</span><span class="p">[</span><span class="s1">&#39;teams&#39;</span><span class="p">][</span><span class="s1">&#39;home&#39;</span><span class="p">][</span><span class="s1">&#39;score&#39;</span><span class="p">])</span> 
-        <span class="k">else</span> <span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">home_score</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">game_info</span><span class="p">[</span><span class="s1">&#39;teams&#39;</span><span class="p">][</span><span class="s1">&#39;home&#39;</span><span class="p">][</span><span class="s1">&#39;score&#39;</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">away_score</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">home_score</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">away_name</span> <span class="o">=</span> <span class="n">a_name</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">home_name</span> <span class="o">=</span> <span class="n">h_name</span>
 
-        <span class="c1"># &quot;&quot;&quot;Inning information only available when the game starts&quot;&quot;&quot;</span>
+        <span class="c1"># Inning information only available when the game starts</span>
         <span class="k">if</span> <span class="s1">&#39;currentInningOrdinal&#39;</span> <span class="ow">in</span> <span class="n">liveData</span><span class="p">[</span><span class="s1">&#39;liveData&#39;</span><span class="p">][</span><span class="s1">&#39;linescore&#39;</span><span class="p">]</span> <span class="ow">and</span> \
-            <span class="bp">self</span><span class="o">.</span><span class="n">game_status</span> <span class="o">==</span> <span class="s1">&#39;LIVE&#39;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">game_status</span> <span class="o">==</span> <span class="s1">&#39;LIVE&#39;</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">game_clock</span> <span class="o">=</span> <span class="n">liveData</span><span class="p">[</span><span class="s1">&#39;liveData&#39;</span><span class="p">][</span><span class="s1">&#39;linescore&#39;</span><span class="p">][</span><span class="s1">&#39;currentInningOrdinal&#39;</span><span class="p">]</span>
-        <span class="k">else</span> <span class="p">:</span>
+        <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">game_clock</span> <span class="o">=</span> <span class="n">liveData</span><span class="p">[</span><span class="s1">&#39;gameData&#39;</span><span class="p">][</span><span class="s1">&#39;datetime&#39;</span><span class="p">][</span><span class="s1">&#39;time&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39; &#39;</span> <span class="o">+</span> \
-                              <span class="n">liveData</span><span class="p">[</span><span class="s1">&#39;gameData&#39;</span><span class="p">][</span><span class="s1">&#39;datetime&#39;</span><span class="p">][</span><span class="s1">&#39;ampm&#39;</span><span class="p">]</span>
+                <span class="n">liveData</span><span class="p">[</span><span class="s1">&#39;gameData&#39;</span><span class="p">][</span><span class="s1">&#39;datetime&#39;</span><span class="p">][</span><span class="s1">&#39;ampm&#39;</span><span class="p">]</span>
 
-        <span class="c1"># &quot;&quot;&quot;Top Inning variable only available when the game starts&quot;&quot;&quot;</span>
+        <span class="c1"># Top Inning variable only available when the game starts</span>
         <span class="k">if</span> <span class="s1">&#39;isTopInning&#39;</span> <span class="ow">in</span> <span class="n">liveData</span><span class="p">[</span><span class="s1">&#39;liveData&#39;</span><span class="p">][</span><span class="s1">&#39;linescore&#39;</span><span class="p">]:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">top_inning</span> <span class="o">=</span> <span class="n">liveData</span><span class="p">[</span><span class="s1">&#39;liveData&#39;</span><span class="p">][</span><span class="s1">&#39;linescore&#39;</span><span class="p">][</span><span class="s1">&#39;isTopInning&#39;</span><span class="p">]</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">strikes</span> <span class="o">=</span> <span class="n">liveData</span><span class="p">[</span><span class="s1">&#39;liveData&#39;</span><span class="p">][</span><span class="s1">&#39;linescore&#39;</span><span class="p">][</span><span class="s1">&#39;strikes&#39;</span><span class="p">]</span>
@@ -86,6 +96,10 @@
 
 <div class="viewcode-block" id="Game.get_matchup"><a class="viewcode-back" href="../../mlb.html#mlb.game.Game.get_matchup">[docs]</a>    <span class="k">def</span> <span class="nf">get_matchup</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
         <span class="sd">&quot;&quot;&quot;Get information of a single game.</span>
+
+<span class="sd">        Simply game information into a dictionary to be used by the draw_board() function.</span>
+<span class="sd">        Returns a dictionary with names for home and away team, game period, game status, </span>
+<span class="sd">        score, and starttime.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            Dict[str, str]: Game information in a dictionary.</span>
@@ -106,10 +120,15 @@
         <span class="k">return</span> <span class="n">matchup</span></div></div>
 
 
-<span class="k">class</span> <span class="nc">Scores</span><span class="p">:</span>
-    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="Scores"><a class="viewcode-back" href="../../mlb.html#mlb.game.Scores">[docs]</a><span class="k">class</span> <span class="nc">Scores</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Scores Class with static function to get scores for the leauge.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="Scores.get_scores"><a class="viewcode-back" href="../../mlb.html#mlb.game.Scores.get_scores">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">get_scores</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]:</span>
-        <span class="sd">&quot;&quot;&quot;Get a list of scores/games that are on-going or planned for the day (in that order)</span>
+        <span class="sd">&quot;&quot;&quot;Get a list of favorite scores/games that are on-going or planned for the day.</span>
+
+<span class="sd">        First, calls for the request of JSON from MLB API and checks if games are favorites.</span>
+<span class="sd">        If so, then it creates Game objects from the data.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            List[Tuple[str, str]]: List of python dicts that contain information of today&#39;s games.</span>
@@ -117,28 +136,30 @@
         <span class="k">try</span><span class="p">:</span>
             <span class="n">data</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">get_JSON</span><span class="p">(</span><span class="n">constants</span><span class="o">.</span><span class="n">MLB_API</span><span class="p">)</span>
 
-            <span class="sd">&quot;&quot;&quot;Only focus on the games scheduled today in the JSON file&quot;&quot;&quot;</span>
+            <span class="c1"># Only focus on the games scheduled today in the JSON file</span>
             <span class="n">all_games</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;dates&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;games&#39;</span><span class="p">]</span>
 
             <span class="n">gs</span> <span class="o">=</span> <span class="p">[]</span>
 
             <span class="k">for</span> <span class="n">game_info</span> <span class="ow">in</span> <span class="n">all_games</span><span class="p">:</span>
-                <span class="sd">&quot;&quot;&quot;Converts team full name to its abbreviation&quot;&quot;&quot;</span>
-                <span class="n">away_name</span> <span class="o">=</span> <span class="n">abbreviations_full</span><span class="p">[</span><span class="n">game_info</span><span class="p">[</span><span class="s1">&#39;teams&#39;</span><span class="p">][</span><span class="s1">&#39;away&#39;</span><span class="p">][</span><span class="s1">&#39;team&#39;</span><span class="p">][</span><span class="s1">&#39;name&#39;</span><span class="p">]]</span>
-                <span class="n">home_name</span> <span class="o">=</span> <span class="n">abbreviations_full</span><span class="p">[</span><span class="n">game_info</span><span class="p">[</span><span class="s1">&#39;teams&#39;</span><span class="p">][</span><span class="s1">&#39;home&#39;</span><span class="p">][</span><span class="s1">&#39;team&#39;</span><span class="p">][</span><span class="s1">&#39;name&#39;</span><span class="p">]]</span>
+                <span class="c1"># Converts team full name to its abbreviation</span>
+                <span class="n">away_name</span> <span class="o">=</span> <span class="n">abbreviations_full</span><span class="p">[</span><span class="n">game_info</span><span class="p">[</span><span class="s1">&#39;teams&#39;</span><span class="p">]</span>
+                                               <span class="p">[</span><span class="s1">&#39;away&#39;</span><span class="p">][</span><span class="s1">&#39;team&#39;</span><span class="p">][</span><span class="s1">&#39;name&#39;</span><span class="p">]]</span>
+                <span class="n">home_name</span> <span class="o">=</span> <span class="n">abbreviations_full</span><span class="p">[</span><span class="n">game_info</span><span class="p">[</span><span class="s1">&#39;teams&#39;</span><span class="p">]</span>
+                                               <span class="p">[</span><span class="s1">&#39;home&#39;</span><span class="p">][</span><span class="s1">&#39;team&#39;</span><span class="p">][</span><span class="s1">&#39;name&#39;</span><span class="p">]]</span>
 
-                <span class="sd">&quot;&quot;&quot;Only find information for teams that the user designates as their favorite&quot;&quot;&quot;</span>
+                <span class="c1"># Only find information for teams that the user designates as their favorite</span>
                 <span class="k">if</span> <span class="n">away_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">MLB_FAVS</span> <span class="ow">and</span> \
                    <span class="n">home_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">MLB_FAVS</span><span class="p">:</span>
                     <span class="k">continue</span>
 
                 <span class="n">game</span> <span class="o">=</span> <span class="n">Game</span><span class="p">(</span><span class="n">game_info</span><span class="p">,</span> <span class="n">away_name</span><span class="p">,</span> <span class="n">home_name</span><span class="p">)</span>
 
-                <span class="n">gs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">game</span><span class="o">.</span><span class="n">get_matchup</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">COLS</span><span class="p">))</span> 
+                <span class="n">gs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">game</span><span class="o">.</span><span class="n">get_matchup</span><span class="p">())</span>
 
             <span class="k">return</span> <span class="n">gs</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="k">return</span> <span class="nb">print</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+            <span class="k">return</span> <span class="nb">print</span><span class="p">(</span><span class="n">e</span><span class="p">)</span></div></div>
 </pre></div>
 
           </div>

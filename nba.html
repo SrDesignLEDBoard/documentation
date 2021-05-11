@@ -37,7 +37,13 @@
 <dl class="py function">
 <dt id="nba.draw_board">
 <code class="sig-prename descclassname"><span class="pre">nba.</span></code><code class="sig-name descname"><span class="pre">draw_board</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/nba.html#draw_board"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#nba.draw_board" title="Permalink to this definition">¶</a></dt>
-<dd><p>Draw components of NBA game</p>
+<dd><p>Draw components of NBA game.</p>
+<p>Firstly, creates a canvas for the LED matrix using various configurations.
+Requests games for the day for NBA and draws various components of the game such as team logos, scores, period, and time.</p>
+<p>“SCORE!!!” animation is disabled by default. User can uncomment it if they want but because frequency of NBA updates,
+the animation will run every single time. (Recommended to keep it disabled)</p>
+<p>If button is pressed during the execution, it will load the next game. If the game is the last one for the day in NBA, then it will
+go to the next league.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns</dt>
 <dd class="field-odd"><p>Return -1 if no favorite game.</p>
@@ -54,7 +60,9 @@
 <dl class="py class">
 <dt id="nba.game.Game">
 <em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">nba.game.</span></code><code class="sig-name descname"><span class="pre">Game</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">game_info</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">any</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/nba/game.html#Game"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#nba.game.Game" title="Permalink to this definition">¶</a></dt>
-<dd><p>Represent a scheduled NBA game</p>
+<dd><p>Represent a scheduled NBA game.</p>
+<p>Game object first parses the JSON dict information.
+Also contains methods to check if the game is of a favorite team.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>game_info</strong> (<em>Dict</em><em>[</em><em>str</em><em>, </em><em>any</em><em>]</em>) – Dictionary generated from JSON object</p>
@@ -62,8 +70,11 @@
 </dl>
 <dl class="py method">
 <dt id="nba.game.Game.get_matchup">
-<code class="sig-name descname"><span class="pre">get_matchup</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">width</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> &#x2192; <span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><a class="reference internal" href="_modules/nba/game.html#Game.get_matchup"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#nba.game.Game.get_matchup" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">get_matchup</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><a class="reference internal" href="_modules/nba/game.html#Game.get_matchup"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#nba.game.Game.get_matchup" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get information of a single game.</p>
+<p>Simply game information into a dictionary to be used by the draw_board() function.
+Returns a dictionary with names for home and away team, game period, game stage, game status, game clock,
+score, and starttime.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns</dt>
 <dd class="field-odd"><p>Game information in a dictionary.</p>
@@ -78,12 +89,36 @@
 <dt id="nba.game.Game.is_favorite_match">
 <code class="sig-name descname"><span class="pre">is_favorite_match</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">favorites</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> &#x2192; <span class="pre">bool</span><a class="reference internal" href="_modules/nba/game.html#Game.is_favorite_match"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#nba.game.Game.is_favorite_match" title="Permalink to this definition">¶</a></dt>
 <dd><p>Check if game has a team favorited by the user.</p>
+<p>Since only the games included in the favorite config are shown, this function checks that
+either home or away team is a favorite.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>True if game if scheduled for today.</p>
+<dd class="field-odd"><p>True if game if either home or away team is a favorite.</p>
 </dd>
 <dt class="field-even">Return type</dt>
 <dd class="field-even"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="nba.game.Scores">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">nba.game.</span></code><code class="sig-name descname"><span class="pre">Scores</span></code><a class="reference internal" href="_modules/nba/game.html#Scores"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#nba.game.Scores" title="Permalink to this definition">¶</a></dt>
+<dd><p>Scores Class with static function to get scores for the leauge.</p>
+<dl class="py method">
+<dt id="nba.game.Scores.get_scores">
+<em class="property"><span class="pre">static</span> </em><code class="sig-name descname"><span class="pre">get_scores</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><a class="reference internal" href="_modules/nba/game.html#Scores.get_scores"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#nba.game.Scores.get_scores" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a list of favorite scores/games that are on-going or planned for the day.</p>
+<p>First, calls for the request of JSON from NBA API and creates Game objects from the data.
+Then, checks for the games scheduled for the day and if the games are favorites.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>List of python dicts that contain information of today’s games.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>List[Tuple[str, str]]</p>
 </dd>
 </dl>
 </dd></dl>

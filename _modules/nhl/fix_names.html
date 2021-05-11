@@ -29,7 +29,10 @@
             
   <h1>Source code for nhl.fix_names</h1><div class="highlight"><pre>
 <div class="viewcode-block" id="fix_name"><a class="viewcode-back" href="../../nhl.html#nhl.fix_names.fix_name">[docs]</a><span></span><span class="k">def</span> <span class="nf">fix_name</span><span class="p">(</span><span class="n">team_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Expand some team names from the values in JSON</span>
+    <span class="sd">&quot;&quot;&quot;Expand some team names from the values in JSON.</span>
+
+<span class="sd">    Some of the names for NHL teams used in the API JSON are incorrect.</span>
+<span class="sd">    In the sense that they omit certain words of the team name. This function fixes that inconsistency. </span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        team_name (str): Shortened name of the team</span>

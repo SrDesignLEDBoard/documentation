@@ -35,7 +35,9 @@
 <dl class="py function">
 <dt id="utils.get_JSON">
 <code class="sig-prename descclassname"><span class="pre">utils.</span></code><code class="sig-name descname"><span class="pre">get_JSON</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">URL</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> &#x2192; <span class="pre">Dict</span><a class="reference internal" href="_modules/utils.html#get_JSON"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utils.get_JSON" title="Permalink to this definition">¶</a></dt>
-<dd><p>Request JSON from API server</p>
+<dd><p>Request JSON from API server.</p>
+<p>GET requests to URL provided to the function and return a python dict.
+APIs like NHL have a wrapper so handles that as well.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>URL</strong> (<em>str</em>) – [description]</p>
@@ -52,7 +54,9 @@
 <dl class="py function">
 <dt id="utils.get_date">
 <code class="sig-prename descclassname"><span class="pre">utils.</span></code><code class="sig-name descname"><span class="pre">get_date</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">delta</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> &#x2192; <span class="pre">str</span><a class="reference internal" href="_modules/utils.html#get_date"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#utils.get_date" title="Permalink to this definition">¶</a></dt>
-<dd><p>Build a date object with given day offset</p>
+<dd><p>Build a date object with given day offset.</p>
+<p>Function is necessary to check games for NHL since the API returns games for entire week.
+Get the date as a string in a particular format used in JSON returned from NHL API.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>delta</strong> (<em>int</em>) – Offset</p>

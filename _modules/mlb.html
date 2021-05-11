@@ -41,7 +41,15 @@
 
 
 <div class="viewcode-block" id="draw_board"><a class="viewcode-back" href="../mlb.html#mlb.draw_board">[docs]</a><span class="k">def</span> <span class="nf">draw_board</span><span class="p">():</span>
-    <span class="sd">&quot;&quot;&quot;Draw components of MLB game</span>
+    <span class="sd">&quot;&quot;&quot;Draw components of MLB game.</span>
+
+<span class="sd">    Firstly, creates a canvas for the LED matrix using various configurations.</span>
+<span class="sd">    Requests games for the day for MLB and draws various components of the game such as team logos, scores, period, and time.</span>
+
+<span class="sd">    Also, draws &quot;SCORE!!!&quot; animation for the game if there is an update in the score.</span>
+
+<span class="sd">    If button is pressed during the execution, it will load the next game. If the game is the last one for the day in MLB, then it will</span>
+<span class="sd">    go to the next league.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        int: Return -1 if no favorite game.</span>
@@ -97,16 +105,16 @@
 
     <span class="k">while</span> <span class="n">it</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">games</span><span class="p">):</span>
         <span class="n">canvas</span><span class="o">.</span><span class="n">Clear</span><span class="p">()</span>
-        
+
         <span class="n">score_len</span> <span class="o">=</span> <span class="mi">20</span>
         <span class="k">if</span> <span class="s1">&#39;score&#39;</span> <span class="ow">in</span> <span class="n">games</span><span class="p">[</span><span class="n">it</span><span class="p">]:</span>
             <span class="c1"># Chagne score len if 2 digit score</span>
-            <span class="n">score_len</span> <span class="o">=</span> <span class="mi">28</span> <span class="k">if</span> <span class="n">games</span><span class="p">[</span><span class="n">it</span><span class="p">][</span><span class="s1">&#39;score&#39;</span><span class="p">][</span><span class="mi">3</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;-&#39;</span> <span class="k">else</span> <span class="mi">20</span> 
+            <span class="n">score_len</span> <span class="o">=</span> <span class="mi">28</span> <span class="k">if</span> <span class="n">games</span><span class="p">[</span><span class="n">it</span><span class="p">][</span><span class="s1">&#39;score&#39;</span><span class="p">][</span><span class="mi">3</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;-&#39;</span> <span class="k">else</span> <span class="mi">20</span>
 
         <span class="c1"># Get x coords for logos</span>
         <span class="n">image_space</span> <span class="o">=</span> <span class="p">(</span><span class="n">COLS</span> <span class="o">-</span> <span class="n">score_len</span> <span class="o">-</span> <span class="mi">4</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span>
-        <span class="n">x_away</span> <span class="o">=</span> <span class="o">-</span><span class="n">ROWS</span> <span class="o">+</span> <span class="n">image_space</span> <span class="o">-</span><span class="mi">2</span>
-        <span class="n">x_home</span> <span class="o">=</span> <span class="n">image_space</span> <span class="o">+</span> <span class="n">score_len</span> <span class="o">+</span><span class="mi">2</span>
+        <span class="n">x_away</span> <span class="o">=</span> <span class="o">-</span><span class="n">ROWS</span> <span class="o">+</span> <span class="n">image_space</span> <span class="o">-</span> <span class="mi">2</span>
+        <span class="n">x_home</span> <span class="o">=</span> <span class="n">image_space</span> <span class="o">+</span> <span class="n">score_len</span> <span class="o">+</span> <span class="mi">2</span>
 
         <span class="c1"># Get logos as thumbnails; home is flipped for right</span>
         <span class="n">image_away</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;logos/MLB/</span><span class="si">{games[it][&#39;away&#39;]}</span><span class="s2">_logo.png&quot;</span><span class="p">)</span>
@@ -127,32 +135,32 @@
             <span class="c1"># and time left in the period</span>
             <span class="n">period_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">games</span><span class="p">[</span><span class="n">it</span><span class="p">][</span><span class="s1">&#39;period&#39;</span><span class="p">])</span><span class="o">*</span><span class="mi">4</span>
             <span class="n">graphics</span><span class="o">.</span><span class="n">DrawText</span><span class="p">(</span><span class="n">canvas</span><span class="p">,</span> <span class="n">font</span><span class="p">,</span>
-                                <span class="nb">int</span><span class="p">((</span><span class="n">COLS</span> <span class="o">-</span> <span class="n">period_len</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span>
-                                <span class="n">height_first_row</span><span class="p">,</span> <span class="n">textColor</span><span class="p">,</span>
-                                <span class="n">games</span><span class="p">[</span><span class="n">it</span><span class="p">][</span><span class="s1">&#39;period&#39;</span><span class="p">])</span>
+                              <span class="nb">int</span><span class="p">((</span><span class="n">COLS</span> <span class="o">-</span> <span class="n">period_len</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span>
+                              <span class="n">height_first_row</span><span class="p">,</span> <span class="n">textColor</span><span class="p">,</span>
+                              <span class="n">games</span><span class="p">[</span><span class="n">it</span><span class="p">][</span><span class="s1">&#39;period&#39;</span><span class="p">])</span>
             <span class="n">graphics</span><span class="o">.</span><span class="n">DrawText</span><span class="p">(</span><span class="n">canvas</span><span class="p">,</span> <span class="n">font</span><span class="p">,</span>
-                        <span class="nb">int</span><span class="p">((</span><span class="n">COLS</span> <span class="o">-</span> <span class="n">score_len</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span>
-                        <span class="n">height_second_row</span><span class="p">,</span> <span class="n">textColor</span><span class="p">,</span> <span class="n">games</span><span class="p">[</span><span class="n">it</span><span class="p">][</span><span class="s1">&#39;score&#39;</span><span class="p">])</span>
+                              <span class="nb">int</span><span class="p">((</span><span class="n">COLS</span> <span class="o">-</span> <span class="n">score_len</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span>
+                              <span class="n">height_second_row</span><span class="p">,</span> <span class="n">textColor</span><span class="p">,</span> <span class="n">games</span><span class="p">[</span><span class="n">it</span><span class="p">][</span><span class="s1">&#39;score&#39;</span><span class="p">])</span>
         <span class="k">elif</span> <span class="n">games</span><span class="p">[</span><span class="n">it</span><span class="p">][</span><span class="s1">&#39;stage&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;Final&#39;</span><span class="p">:</span>
             <span class="c1"># Else print &#39;fin&#39; to indicate final score</span>
             <span class="n">graphics</span><span class="o">.</span><span class="n">DrawText</span><span class="p">(</span><span class="n">canvas</span><span class="p">,</span> <span class="n">font</span><span class="p">,</span>
-                                <span class="nb">int</span><span class="p">((</span><span class="n">COLS</span> <span class="o">-</span> <span class="mi">12</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span>
-                                <span class="n">height_first_row</span><span class="p">,</span> <span class="n">textColor</span><span class="p">,</span> <span class="s2">&quot;FIN&quot;</span><span class="p">)</span>
+                              <span class="nb">int</span><span class="p">((</span><span class="n">COLS</span> <span class="o">-</span> <span class="mi">12</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span>
+                              <span class="n">height_first_row</span><span class="p">,</span> <span class="n">textColor</span><span class="p">,</span> <span class="s2">&quot;FIN&quot;</span><span class="p">)</span>
             <span class="n">graphics</span><span class="o">.</span><span class="n">DrawText</span><span class="p">(</span><span class="n">canvas</span><span class="p">,</span> <span class="n">font</span><span class="p">,</span>
-                        <span class="nb">int</span><span class="p">((</span><span class="n">COLS</span> <span class="o">-</span> <span class="n">score_len</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span>
-                        <span class="n">height_second_row</span><span class="p">,</span> <span class="n">textColor</span><span class="p">,</span> <span class="n">games</span><span class="p">[</span><span class="n">it</span><span class="p">][</span><span class="s1">&#39;score&#39;</span><span class="p">])</span>
+                              <span class="nb">int</span><span class="p">((</span><span class="n">COLS</span> <span class="o">-</span> <span class="n">score_len</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span>
+                              <span class="n">height_second_row</span><span class="p">,</span> <span class="n">textColor</span><span class="p">,</span> <span class="n">games</span><span class="p">[</span><span class="n">it</span><span class="p">][</span><span class="s1">&#39;score&#39;</span><span class="p">])</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="c1"># If planned game, print @ and time</span>
             <span class="n">period_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">games</span><span class="p">[</span><span class="n">it</span><span class="p">][</span><span class="s1">&#39;period&#39;</span><span class="p">])</span><span class="o">*</span><span class="mi">4</span>
             <span class="n">graphics</span><span class="o">.</span><span class="n">DrawText</span><span class="p">(</span><span class="n">canvas</span><span class="p">,</span> <span class="n">font</span><span class="p">,</span>
-                                <span class="nb">int</span><span class="p">((</span><span class="n">COLS</span> <span class="o">-</span> <span class="mi">8</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span>
-                                <span class="n">height_first_row</span><span class="p">,</span> <span class="n">textColor</span><span class="p">,</span> <span class="s2">&quot;AT&quot;</span><span class="p">)</span>
+                              <span class="nb">int</span><span class="p">((</span><span class="n">COLS</span> <span class="o">-</span> <span class="mi">8</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span>
+                              <span class="n">height_first_row</span><span class="p">,</span> <span class="n">textColor</span><span class="p">,</span> <span class="s2">&quot;AT&quot;</span><span class="p">)</span>
             <span class="n">graphics</span><span class="o">.</span><span class="n">DrawText</span><span class="p">(</span><span class="n">canvas</span><span class="p">,</span> <span class="n">font</span><span class="p">,</span>
-                                <span class="nb">int</span><span class="p">((</span><span class="n">COLS</span> <span class="o">-</span> <span class="n">period_len</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span>
-                                <span class="n">height_second_row</span><span class="p">,</span> <span class="n">textColor</span><span class="p">,</span> <span class="n">games</span><span class="p">[</span><span class="n">it</span><span class="p">][</span><span class="s1">&#39;period&#39;</span><span class="p">])</span>
+                              <span class="nb">int</span><span class="p">((</span><span class="n">COLS</span> <span class="o">-</span> <span class="n">period_len</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span>
+                              <span class="n">height_second_row</span><span class="p">,</span> <span class="n">textColor</span><span class="p">,</span> <span class="n">games</span><span class="p">[</span><span class="n">it</span><span class="p">][</span><span class="s1">&#39;period&#39;</span><span class="p">])</span>
             <span class="n">graphics</span><span class="o">.</span><span class="n">DrawText</span><span class="p">(</span><span class="n">canvas</span><span class="p">,</span> <span class="n">font</span><span class="p">,</span>
-                                <span class="nb">int</span><span class="p">((</span><span class="n">COLS</span> <span class="o">-</span> <span class="mi">16</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span>
-                                <span class="n">height_third_row</span><span class="p">,</span> <span class="n">textColor</span><span class="p">,</span> <span class="s1">&#39;HOME&#39;</span><span class="p">)</span>
+                              <span class="nb">int</span><span class="p">((</span><span class="n">COLS</span> <span class="o">-</span> <span class="mi">16</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span>
+                              <span class="n">height_third_row</span><span class="p">,</span> <span class="n">textColor</span><span class="p">,</span> <span class="s1">&#39;HOME&#39;</span><span class="p">)</span>
 
         <span class="c1"># Handle control button and wait</span>
         <span class="n">is_button_pressed</span> <span class="o">=</span> <span class="n">button</span><span class="o">.</span><span class="n">wait_for_press</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
@@ -171,7 +179,7 @@
 
             <span class="c1"># Check if new fixes</span>
             <span class="k">if</span> <span class="n">games</span><span class="p">[</span><span class="n">it</span><span class="p">][</span><span class="s1">&#39;away&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="n">games</span><span class="p">[</span><span class="n">it</span><span class="p">][</span><span class="s1">&#39;away&#39;</span><span class="p">]</span> <span class="ow">and</span> \
-                <span class="n">tmp</span><span class="p">[</span><span class="n">it</span><span class="p">][</span><span class="s1">&#39;home&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="n">tmp</span><span class="p">[</span><span class="n">it</span><span class="p">][</span><span class="s1">&#39;home&#39;</span><span class="p">]:</span>
+                    <span class="n">tmp</span><span class="p">[</span><span class="n">it</span><span class="p">][</span><span class="s1">&#39;home&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="n">tmp</span><span class="p">[</span><span class="n">it</span><span class="p">][</span><span class="s1">&#39;home&#39;</span><span class="p">]:</span>
                 <span class="n">it</span> <span class="o">=</span> <span class="mi">0</span>
             <span class="k">elif</span> <span class="n">games</span><span class="p">[</span><span class="n">it</span><span class="p">][</span><span class="s1">&#39;stage&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;In Progress&#39;</span> <span class="ow">and</span> <span class="n">games</span><span class="p">[</span><span class="n">it</span><span class="p">][</span><span class="s1">&#39;score&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="n">tmp</span><span class="p">[</span><span class="n">it</span><span class="p">][</span><span class="s1">&#39;score&#39;</span><span class="p">]:</span>
                 <span class="c1"># check for score update</span>
@@ -179,7 +187,8 @@
                 <span class="n">rounds</span> <span class="o">=</span> <span class="mi">0</span>
                 <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
                     <span class="n">canvas</span><span class="o">.</span><span class="n">Clear</span><span class="p">()</span>
-                    <span class="n">l</span> <span class="o">=</span> <span class="n">graphics</span><span class="o">.</span><span class="n">DrawText</span><span class="p">(</span><span class="n">canvas</span><span class="p">,</span> <span class="n">anifont</span><span class="p">,</span> <span class="n">pos</span><span class="p">,</span> <span class="n">height_second_row</span><span class="p">,</span> <span class="n">textColor</span><span class="p">,</span> <span class="s1">&#39;SCORE!!!&#39;</span><span class="p">)</span>
+                    <span class="n">l</span> <span class="o">=</span> <span class="n">graphics</span><span class="o">.</span><span class="n">DrawText</span><span class="p">(</span>
+                        <span class="n">canvas</span><span class="p">,</span> <span class="n">anifont</span><span class="p">,</span> <span class="n">pos</span><span class="p">,</span> <span class="n">height_second_row</span><span class="p">,</span> <span class="n">textColor</span><span class="p">,</span> <span class="s1">&#39;SCORE!!!&#39;</span><span class="p">)</span>
                     <span class="n">pos</span> <span class="o">-=</span> <span class="mi">1</span>
                     <span class="k">if</span> <span class="p">(</span><span class="n">pos</span> <span class="o">+</span> <span class="n">l</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">):</span>
                         <span class="n">pos</span> <span class="o">=</span> <span class="n">ROWS</span>
